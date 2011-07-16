@@ -1,17 +1,26 @@
+CC=gcc
+CFLAGS=-O2
+TARGET=x86
+SRC=$(TARGET).c
+OUT=$(TARGET).run
+
 all: linux
-linux:
+	./$(OUT)
+
+linux: lib test
+	$(CC) $(CFLAGS) $(SRC) lib/linux.c -o $(OUT)
+	strip ./$(OUT)
+
+win32: lib test
+	$(CC) $(CFLAGS) $(SRC) lib/linux.c -o $(OUT)
+	strip $(OUT)
+
+lib:
 	./compiler.py libc
+test:
 	./compiler.py test
-	gcc -O2 x86.c lib/linux.c -o x86 && ./x86
-win32:
-	./compiler.py libc
-	./compiler.py test
-	gcc x86.c lib/win32.c -o x86
-	x86.exe
+
 clean:
-	rm x86 *.bin *.obj
+	rm $(OUT) *.bin *.obj
 start:
-	geany compiler.py x86.c libc.asm test.asm &
-gtk:
-	@gcc `pkg-config --libs gtk+-2.0` `pkg-config --cflags gtk+-2.0` hw.c -o hw
-	@./hw
+	geany compiler.py $(SRC) libc.asm test.asm
