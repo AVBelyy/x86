@@ -2,20 +2,21 @@ CC=gcc
 CFLAGS=-O2
 TARGET=x86
 SRC=$(TARGET).c
-OUT=$(TARGET).run
+OUT=$(TARGET)
+APPS=libc test
 
 all: linux
-	./compiler.py libc
-	./compiler.py test
+
+linux: apps
+	$(CC) $(CFLAGS) $(SRC) lib/linux.c -o $(OUT)
 	./$(OUT)
 
-linux:
+win32: apps
 	$(CC) $(CFLAGS) $(SRC) lib/linux.c -o $(OUT)
-	strip ./$(OUT)
+	$(OUT).exe
 
-win32:
-	$(CC) $(CFLAGS) $(SRC) lib/linux.c -o $(OUT)
-	strip $(OUT)
+apps:
+	@RESULT=$(foreach APP, $(APPS), $(shell sh -cx "./compiler.py $(APP)"))
 
 clean:
 	rm $(OUT) *.bin *.obj
