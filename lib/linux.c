@@ -1,10 +1,5 @@
 #include "../libs.h"
 
-#define GETSTR_(string_, regist_) \
-uint8_t *string_; \
-calc_mem(string_, regist_); \
-string_[strlen(string_)-1]=0;
-
 void int80_handler(void *p)
 {
     uint32_t *regs = caller->regs;
@@ -22,8 +17,9 @@ void int80_handler(void *p)
             /* ebx - int fd;
                ecx - void *buf;
                edx - size_t count; */
-	    GETSTR_(buf, ECX);
-            caller->EAX = read(EBX, (uint32_t)buf, EDX);
+	    uint8_t *buf;
+            calc_mem(buf, ECX);
+            caller->EAX = read(EBX, buf, EDX);
             break;
         }
         case 0x04: // write
@@ -31,8 +27,9 @@ void int80_handler(void *p)
             /* ebx - int fd;
                ecx - void *buf;
                edx - size_t count; */
-	    GETSTR_(buf, ECX);
-            caller->EAX = write(EBX, (uint32_t)buf, EDX);
+            uint8_t *buf;
+            calc_mem(buf, ECX);
+            caller->EAX = write(EBX, buf, EDX);
             break;
         }
         case 0x05: // open
@@ -40,8 +37,9 @@ void int80_handler(void *p)
             /* ebx - char *pathname;
                ecx - int flags;
                edx - mode_t mode; */
-	    GETSTR_(pathname, EBX);
-            caller->EAX = open((uint32_t)pathname, ECX, EDX);
+	    uint8_t *pathname;
+            calc_mem(pathname, EBX);
+            caller->EAX = open(pathname, ECX, EDX);
             break;
         }
         case 0x06: // close
@@ -54,16 +52,18 @@ void int80_handler(void *p)
         {
             /* ebx - char *pathname;
                ecx - mode_t mode; */
-	    GETSTR_(pathname, EBX);
-            caller->EAX = creat((uint32_t)pathname, ECX);
+	    uint8_t *pathname;
+            calc_mem(pathname, EBX);
+            caller->EAX = creat(pathname, ECX);
             break;
         }
 	case 0x09: // link, not work yet
         {
             /* ebx - const char *oldpath;
                ecx - const char *newpath; */
-	    GETSTR_(oldpath, EBX);
-	    GETSTR_(newpath, ECX);
+	    uint8_t *oldpath,*newpath;
+            calc_mem(oldpath, EBX);
+	    calc_mem(newpath, ECX);
             caller->EAX = link(oldpath, newpath);
             break;
         }

@@ -30,6 +30,7 @@ section .text
             div     edx,10
             jnz     .count
             mov     [eax],'\0'
+            mov     ebx,eax
 .loop:      dec     eax
             mov     edx,ecx
             mod     edx,10
@@ -38,6 +39,7 @@ section .text
             mov     [eax],dl
             test    ecx,ecx
             jnz     .loop
+            sub     ebx,eax
             leave
             ret
 
@@ -113,18 +115,5 @@ quickaux:
             popa
             leave
             ret
-
-
-@print:
-            enter
-            mov     eax,esp
-            push    ebx
-            mov     eax,2
-            mov     ebx,[ebp+8]
-            int     0x05
-            pop     ebx
-            leave
-            ret
-
 
 _start:     ret
