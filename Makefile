@@ -5,20 +5,17 @@ SRC=$(TARGET).c
 OUT=$(TARGET).run
 
 all: linux
+	./compiler.py libc
+	./compiler.py test
 	./$(OUT)
 
-linux: lib test
+linux:
 	$(CC) $(CFLAGS) $(SRC) lib/linux.c -o $(OUT)
 	strip ./$(OUT)
 
-win32: lib test
+win32:
 	$(CC) $(CFLAGS) $(SRC) lib/linux.c -o $(OUT)
 	strip $(OUT)
-
-lib:
-	./compiler.py libc
-test:
-	./compiler.py test
 
 clean:
 	rm $(OUT) *.bin *.obj
