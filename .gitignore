@@ -2,4 +2,5 @@
 *.obj
 *.o
 *.pyc
+*.swp
 x86

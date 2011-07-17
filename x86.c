@@ -1004,8 +1004,10 @@ void x86_exit(void *p)
     exit(0);
 }
 
-int main()
+int main(int argc, char **argv)
 {
+    char *app_path;
+
     // init signal interrupt
     set_intr(0, sig_handler);
 
@@ -1021,8 +1023,17 @@ int main()
     // load libc
     code_load("libc.bin");
 
-    // load test app
-    struct CODE *test = code_load("test.bin");
+    // load application
+    if(argc < 2)
+    {
+        app_path = malloc(9);
+        strcpy(app_path, "test.bin");
+    } else {
+        app_path = malloc(strlen(argv[1]+1));
+        strcpy(app_path, argv[1]);
+    }
+    struct CODE *test = code_load(app_path);
+    free(app_path);
     code_exec(test);
 
     // raise X86_EXIT

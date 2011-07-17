@@ -3,7 +3,7 @@ CFLAGS=-O2
 TARGET=x86
 SRC=$(TARGET).c
 OUT=$(TARGET)
-APPS=libc test
+APPS=libc test examples/qsort
 
 all: linux
 
