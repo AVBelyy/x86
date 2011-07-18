@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys, os, re, math
+import os, re
+from math import log
+from optparse import OptionParser
 
 class _:
     BYTE    =    1
@@ -577,12 +579,12 @@ class Parser:
                 x, op, y = tokens[i-1], tokens[i], tokens[i+1]
                 if op in ("+", "-", "*"):
                     if   (x.lower() in regs) and (op == "*") and y in ("1", "2", "4", "8"):
-                        p[0] = p[0] if flags&(1<<0) else int( math.log( int( y ), 2) )
+                        p[0] = p[0] if flags&(1<<0) else int( log( int( y ), 2) )
                         p[1] = p[1] if flags&(1<<1) else _.registers[x.lower()][0]
                         tokens[i+1] = x
                         flags = mark(True, 0, 1)
                     elif (x.lower() in regs) and (op == "*") and y in ("3", "5", "9"):
-                        p[0] = p[0] if flags&(1<<0) else int( math.log( int( y )-1, 2) )
+                        p[0] = p[0] if flags&(1<<0) else int( log( int( y )-1, 2) )
                         p[1] = p[1] if flags&(1<<1) else _.registers[x.lower()][0]
                         p[2] = p[2] if flags&(1<<2) else _.registers[x.lower()][0]
                         tokens[i+1] = x
@@ -924,25 +926,25 @@ class Parser:
         else:
             raise _.SyntaxError, (self, "unknown command or invalid syntax")
 
-    def __init__( self, path ):
+    def __init__( self, path, opts ):
         self.sections = {
-            "header"    :    [176, 0, 0, 0, 0, 0, 0, 0],
-            "export"    :    {},
-            "shared"    :    [],
-            "text"      :    [[], 0]
+            "header"    : [176, 0, 0, 0, 0, 0, 0, 0],
+            "export"    : {},
+            "shared"    : [],
+            "text"      : [[], 0]
         }
-        self.path         =    _.search_source( path )
-        self.cur          =    "text"
-        self.constants    =    { "$": "0" }
-        self.sconstants   =    {}
-        self.macros       =    {}
-        self.structs      =    {}
-        self.labels       =    {}
-        self.last_label   =    ""
-        self.allow_def    =    True
-        self.hooks        =    []
+        self.path       = path
+        self.cur        = "text"
+        self.constants  = { "$": "0" }
+        self.sconstants = {}
+        self.macros     = {}
+        self.structs    = {}
+        self.labels     = {}
+        self.last_label = ""
+        self.allow_def  = True
+        self.hooks      = []
         try:
-            self.f = open( self.path + ".asm" )
+            self.f = open( self.path )
             self.lines = Parser.prologue + self.f.readlines()
         except:
             raise IOError, "incorrect source filename: '%s'" % path
@@ -967,7 +969,7 @@ class Parser:
         # parse 'export' section
         export = self.sections["export"]
         if len ( export ):
-            inc = open( self.path+".obj", "w" )
+            inc = open( os.path.basename( os.path.splitext( path )[0] ) + ".obj", "w" )
             maxlen = max( map( len, export.values() ) )
             items = sorted( [(int( k ),v) for k,v in export.items()] )
             for addr, name in items:
@@ -982,10 +984,14 @@ class Parser:
             s_text      =    map( chr, self.sections["text"][0] )
         except:
             raise SyntaxError, "unknown error"
-        file(self.path+".bin", "wb").write( "".join( s_header + s_shared + s_text ) )        
+        output = opts.file or os.path.basename( os.path.splitext( path )[0] ) + ".bin"
+        file( output, "wb" ).write( "".join( s_header + s_shared + s_text ) )
 
-try:
-    source = sys.argv[1]
-except IndexError:
-    source = None
-lexer = Parser( source )
+parser = OptionParser(usage="%prog PROGRAM [options]")
+parser.add_option("-o", dest="file", help="write results to FILE")
+options, args = parser.parse_args()
+
+try:    source = args[0]
+except: source = None
+
+Parser( source, options )
