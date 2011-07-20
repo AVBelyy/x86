@@ -969,7 +969,7 @@ class Parser:
         # parse 'export' section
         export = self.sections["export"]
         if len ( export ):
-            inc = open( os.path.basename( os.path.splitext( path )[0] ) + ".obj", "w" )
+            inc = open( os.path.basename( os.path.splitext( opts.file or path )[0] ) + ".obj", "w" )
             maxlen = max( map( len, export.values() ) )
             items = sorted( [(int( k ),v) for k,v in export.items()] )
             for addr, name in items:
