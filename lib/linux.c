@@ -9,15 +9,12 @@ void int80_handler(void *p)
         case 0x01: // exit
             sig_raise(X86_EXIT, p);
             break;
-        case 0x02: // fork, not implemented yet
-	    caller->EAX = fork();
-            break;
         case 0x03: // read
         {
             /* ebx - int fd;
                ecx - void *buf;
                edx - size_t count; */
-	    uint8_t *buf;
+            uint8_t *buf;
             calc_mem(buf, ECX);
             caller->EAX = read(EBX, buf, EDX);
             break;
@@ -37,7 +34,7 @@ void int80_handler(void *p)
             /* ebx - char *pathname;
                ecx - int flags;
                edx - mode_t mode; */
-	    uint8_t *pathname;
+            uint8_t *pathname;
             calc_mem(pathname, EBX);
             caller->EAX = open(pathname, ECX, EDX);
             break;
@@ -48,28 +45,25 @@ void int80_handler(void *p)
             caller->EAX = close(EBX);
             break;
         }
-	case 0x08: // creat
+        case 0x08: // creat
         {
             /* ebx - char *pathname;
                ecx - mode_t mode; */
-	    uint8_t *pathname;
+            uint8_t *pathname;
             calc_mem(pathname, EBX);
             caller->EAX = creat(pathname, ECX);
             break;
         }
-	case 0x09: // link, not work yet
+        case 0x09: // link, not implemented yet
         {
             /* ebx - const char *oldpath;
                ecx - const char *newpath; */
-	    uint8_t *oldpath,*newpath;
+            uint8_t *oldpath,*newpath;
             calc_mem(oldpath, EBX);
-	    calc_mem(newpath, ECX);
+            calc_mem(newpath, ECX);
             caller->EAX = link(oldpath, newpath);
             break;
         }
-	case 0xBE: // vfork, not work yet
-	    caller->EAX = vfork();
-            break;
     }
 }
 

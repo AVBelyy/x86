@@ -6,9 +6,9 @@ include     "libc.obj"
 ^buf        dd      0, 0, 0
 
 ;  messages
-^before_msg db      "Before sort: "
+before_msg db      "Before sort: "
 bmsg_length = $-before_msg
-^after_msg  db      "After sort:  "
+after_msg  db      "After sort:  "
 amsg_length = $-after_msg
 
 ; symbols

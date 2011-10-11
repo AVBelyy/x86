@@ -96,8 +96,8 @@ int code_exec(struct CODE *p)
         {
             case 0x01:  // DBG
             {
-                printf("EAX=%d EBX=%d ECX=%d EDX=%d ; ", EAX, EBX, ECX, EDX);
-                printf("CF=%d PF=%d ZF=%d SF=%d OF=%d\n", bget(CF), bget(PF), bget(ZF), bget(SF), bget(OF));
+                fprintf(stderr, ":: EAX=%d EBX=%d ECX=%d EDX=%d ; ", EAX, EBX, ECX, EDX);
+                fprintf(stderr, ":: CF=%d PF=%d ZF=%d SF=%d OF=%d\n", bget(CF), bget(PF), bget(ZF), bget(SF), bget(OF));
                 break;
             }
             case 0x02:  // MOV REG REG
@@ -992,6 +992,7 @@ int code_free(struct CODE *p)
 
 void x86_exit(void *p)
 {
+    fprintf(stderr, ":: raised X86_EXIT signal\n");
     // destroy all program's data
     struct STACK *cur = head;
     while(cur != NULL)

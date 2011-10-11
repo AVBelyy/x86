@@ -3,7 +3,7 @@ CFLAGS=-O2
 TARGET=x86
 SRC=$(TARGET).c
 OUT=$(TARGET)
-APPS=libc.asm test.asm examples/qsort.asm
+APPS=libc.asm examples/test.asm examples/qsort.asm
 
 all: linux
 
@@ -19,4 +19,4 @@ apps:
 	@RESULT=$(foreach APP, $(APPS), $(shell sh -cx "./compiler.py $(APP)"))
 
 clean:
-	rm $(OUT) $(OUT).exe *.bin *.obj
+	rm -f $(OUT) $(OUT).exe *.bin *.obj
