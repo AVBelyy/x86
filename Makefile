@@ -3,7 +3,7 @@ CFLAGS=-O2
 TARGET=x86
 SRC=$(TARGET).c
 OUT=$(TARGET)
-APPS=libc.asm examples/test.asm examples/qsort.asm
+APPS=libc.asm examples/*.asm
 
 all: linux
 

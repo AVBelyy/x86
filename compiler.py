@@ -987,11 +987,9 @@ class Parser:
         output = opts.file or os.path.basename( os.path.splitext( path )[0] ) + ".bin"
         file( output, "wb" ).write( "".join( s_header + s_shared + s_text ) )
 
-parser = OptionParser(usage="%prog PROGRAM [options]")
+parser = OptionParser(usage="%prog FILE1 [FILE2 .. FILEN] [options]")
 parser.add_option("-o", dest="file", help="write results to FILE")
 options, args = parser.parse_args()
 
-try:    source = args[0]
-except: source = None
-
-Parser( source, options )
+for source in args:
+    Parser( source, options )
