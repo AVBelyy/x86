@@ -1,3 +1,7 @@
+; (C) Anton Belyy, 2011
+
+include     "libc.obj"
+
 Crc32Table  dd      0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA
             dd      0x076DC419, 0x706AF48F, 0xE963A535, 0x9E6495A3
             dd      0x0EDB8832, 0x79DCB8A4, 0xE0D5E91E, 0x97D2D988
@@ -62,17 +66,74 @@ Crc32Table  dd      0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA
             dd      0xBAD03605, 0xCDD70693, 0x54DE5729, 0x23D967BF
             dd      0xB3667A2E, 0xC4614AB8, 0x5D681B02, 0x2A6F2B94
             dd      0xB40BBE37, 0xC30C8EA1, 0x5A05DF1B, 0x2D02EF8D
-test_string db      "Hello world. wanna check my CRC?"
+
+^itoa_buf   dd      0, 0, 0
+source_msg  db      "Source: "
+crc32_msg   db      0xA, "CRC-32: "
+
+test_string db      "Hello world. Wanna check my CRC-32?"
+test_strlen =       $-test_string
+
 
 @crc32:
             enter
+            push    ebx
+            mov     eax,0xFFFFFFFF
             mov     ebx,[ebp+8]
+            mov     ecx,[ebp+12]
+.loop:
+            ; calculate index at Crc32Table
+            mov     edx,eax
+            xor     dl,byte [ebx]
+            and     edx,0xFF
+            ; calculate CRC
+            shr     eax,8
+            xor     eax,dword [Crc32Table+edx*4]
+            inc     ebx
+            loop    .loop
+            xor     eax,0xFFFFFFFF
+            pop     ebx
             leave
             ret
 
 _start:
-            push    test_string
+            ; print source_msg
+            mov     eax,4
+            mov     ebx,1
+            mov     ecx,source_msg
+            mov     edx,8
+            int     0x80
+            ; print test_string
+            mov     eax,4
+            mov     ebx,1
+            mov     ecx,test_string
+            mov     edx,test_strlen
+            int     0x80
+            ; print crc32_msg
+            mov     eax,4
+            mov     ebx,1
+            mov     ecx,crc32_msg
+            mov     edx,9
+            int     0x80
+            ; calculate CRC-32
+            push    dword test_strlen
+            push    dword test_string
             call    crc32
-            add     esp,4
+            add     esp,8
+            ; convert and print CRC-32
+            push    ^itoa_buf
+            push    eax
+            call    itoa
+            add     esp,8
+            mov     ecx,eax
+            mov     edx,ebx
+            mov     eax,4
+            mov     ebx,1
+            int     0x80
+            ; print '\n' (first byte of crc32_msg) and exit program
+            mov     eax,4
+            mov     ebx,1
+            mov     ecx,crc32_msg
+            mov     edx,1
+            int     0x80
             ret
-
