@@ -1030,7 +1030,7 @@ int main(int argc, char **argv)
         app_path = malloc(9);
         strcpy(app_path, "test.bin");
     } else {
-        app_path = malloc(strlen(argv[1]+1));
+        app_path = malloc(strlen(argv[1])+1);
         strcpy(app_path, argv[1]);
     }
     struct CODE *test = code_load(app_path);
