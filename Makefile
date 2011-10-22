@@ -13,7 +13,7 @@ linux: apps
 
 win32: apps
 	$(CC) $(CFLAGS) $(SRC) lib/win32.c -o $(OUT).exe
-	$(OUT).exe
+	.\$(OUT).exe
 
 apps:
 	@RESULT=$(foreach APP, $(APPS), $(shell sh -cx "./compiler.py $(APP)"))
