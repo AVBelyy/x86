@@ -84,6 +84,73 @@ void sig_raise(int sig, void *p)
     }
 }
 
+void int32_handler(void *p)
+{
+    uint32_t *regs = caller->regs;
+    uint8_t  *text = caller->text;
+    switch(EAX)
+    {
+        case 0x01: // exit
+            sig_raise(X86_EXIT, p);
+            break;
+        case 0x03: // read
+        {
+            /* ebx - int fd;
+               ecx - void *buf;
+               edx - size_t count; */
+            uint8_t *buf;
+            calc_mem(buf, ECX);
+            caller->EAX = io_read(EBX, buf, EDX);
+            break;
+        }
+        case 0x04: // write
+        {
+            /* ebx - int fd;
+               ecx - void *buf;
+               edx - size_t count; */
+            uint8_t *buf;
+            calc_mem(buf, ECX);
+            caller->EAX = io_write(EBX, buf, EDX);
+            break;
+        }
+        case 0x05: // open
+        {
+            /* ebx - char *pathname;
+               ecx - int flags;
+               edx - mode_t mode; */
+            uint8_t *pathname;
+            calc_mem(pathname, EBX);
+            caller->EAX = io_open(pathname, ECX, EDX);
+            break;
+        }
+        case 0x06: // close
+        {
+            /* ebx - int fd; */
+            caller->EAX = io_close(EBX);
+            break;
+        }
+        case 0x08: // creat
+        {
+            /* ebx - char *pathname;
+               ecx - mode_t mode; */
+            uint8_t *pathname;
+            calc_mem(pathname, EBX);
+            caller->EAX = io_creat(pathname, ECX);
+            break;
+        }
+        case 0x09: // link
+        {
+            /* ebx - const char *oldpath;
+               ecx - const char *newpath; */
+            uint8_t *oldpath,*newpath;
+            calc_mem(oldpath, EBX);
+            calc_mem(newpath, ECX);
+            caller->EAX = io_link(oldpath, newpath);
+            break;
+        }
+    }
+}
+
 int code_exec(struct CODE *p)
 {
     uint32_t *regs = p->regs;
@@ -96,8 +163,8 @@ int code_exec(struct CODE *p)
         {
             case 0x01:  // DBG
             {
-                fprintf(stderr, ":: EAX=%d EBX=%d ECX=%d EDX=%d ; ", EAX, EBX, ECX, EDX);
-                fprintf(stderr, ":: CF=%d PF=%d ZF=%d SF=%d OF=%d\n", bget(CF), bget(PF), bget(ZF), bget(SF), bget(OF));
+                fprintf(stderr, "EAX=%d EBX=%d ECX=%d EDX=%d ; ", EAX, EBX, ECX, EDX);
+                fprintf(stderr, "CF=%d PF=%d ZF=%d SF=%d OF=%d\n", bget(CF), bget(PF), bget(ZF), bget(SF), bget(OF));
                 break;
             }
             case 0x02:  // MOV REG REG
@@ -1015,12 +1082,12 @@ int main(int argc, char **argv)
     // set X86_EXIT handler
     sig_attach(X86_EXIT, x86_exit);
 
-    // init libraries
-    #if defined(_WIN32) || defined(WIN32)
-        win32_init();
-    #else
-        linux_init();
-    #endif
+    // init internal kernel parts (platform abstraction layer, libs, drivers, etc)
+    io_init();
+    memmgr_init();
+    platform_init();
+    // set interrupt handler
+    set_intr(0x32, int32_handler);
     // load libc
     code_load("libc.bin");
 

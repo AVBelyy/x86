@@ -102,19 +102,19 @@ _start:
             mov     ebx,1
             mov     ecx,source_msg
             mov     edx,8
-            int     0x80
+            int     0x32
             ; print test_string
             mov     eax,4
             mov     ebx,1
             mov     ecx,test_string
             mov     edx,test_strlen
-            int     0x80
+            int     0x32
             ; print crc32_msg
             mov     eax,4
             mov     ebx,1
             mov     ecx,crc32_msg
             mov     edx,9
-            int     0x80
+            int     0x32
             ; calculate CRC-32
             push    dword test_strlen
             push    dword test_string
@@ -129,11 +129,11 @@ _start:
             mov     edx,ebx
             mov     eax,4
             mov     ebx,1
-            int     0x80
+            int     0x32
             ; print '\n' (first byte of crc32_msg) and exit program
             mov     eax,4
             mov     ebx,1
             mov     ecx,crc32_msg
             mov     edx,1
-            int     0x80
+            int     0x32
             ret

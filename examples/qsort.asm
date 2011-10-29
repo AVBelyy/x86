@@ -21,7 +21,7 @@ size = ($-array)/4
 
 out_array:  mov     eax,4           ;  print message
             mov     ebx,1
-            int     0x80
+            int     0x32
             mov     esi,0
 .loop:      push    ^buf
             push    dword [array+esi*4]
@@ -31,17 +31,17 @@ out_array:  mov     eax,4           ;  print message
             mov     edx,ebx
             mov     eax,4
             mov     ebx,1
-            int     0x80
+            int     0x32
             mov     eax,4
             mov     ecx,space
             mov     edx,1
-            int     0x80
+            int     0x32
             inc     esi
             cmp     esi,size
             jne     .loop
             mov     eax,4
             mov     ecx,newline
-            int     0x80
+            int     0x32
             ret
 
 _start:     mov     ecx,before_msg

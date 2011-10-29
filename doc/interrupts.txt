@@ -1,0 +1,7 @@
+Short core & driver's interrupts list
+(C) Anton Belyy, 2011
+
+Int #       Description
+=========================
+0x32        The main interrupt, contains handlers of all core functions (memmgr, IO, etc)
+0x33-0x60   Reserved for internal drivers

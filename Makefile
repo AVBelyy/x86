@@ -1,18 +1,18 @@
 CC=gcc
-CFLAGS=-O2
+CFLAGS=-O2 -Wno-unused-result
 TARGET=x86
-SRC=$(TARGET).c
+SRC=$(TARGET).c lib/core/*.c
 OUT=$(TARGET)
 APPS=libc.asm examples/*.asm
 
 all: linux
 
 linux: apps
-	$(CC) $(CFLAGS) $(SRC) lib/linux.c -o $(OUT)
+	$(CC) $(CFLAGS) $(SRC) lib/platform/linux.c -o $(OUT)
 	./$(OUT)
 
 win32: apps
-	$(CC) $(CFLAGS) $(SRC) lib/win32.c -o $(OUT).exe
+	$(CC) $(CFLAGS) $(SRC) lib/platform/win32.c -o $(OUT).exe
 	.\$(OUT).exe
 
 apps:
