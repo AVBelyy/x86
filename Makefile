@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-O2 -Wno-unused-result
+CFLAGS=-O2 -w
 TARGET=x86
 SRC=$(TARGET).c lib/core/*.c
 OUT=$(TARGET)
