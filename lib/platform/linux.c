@@ -41,15 +41,15 @@ void platform_init()
 {
     /* firstly, let's initialize and open first-three-canonical files
        (stdin, stdout, stderr -- shame on you if you didn't know!) */
-    linux_stdin.state = IO_STATE_CLOSED;
+    linux_stdin.state = IO_STATE_OPENED;
     linux_stdin.internal = (void*)0;
     linux_stdin.handler = linux_handler;
     set_fd(0, linux_stdin);
-    linux_stdout.state = IO_STATE_CLOSED;
+    linux_stdout.state = IO_STATE_OPENED;
     linux_stdout.internal = (void*)1;
     linux_stdout.handler = linux_handler;
     set_fd(1, linux_stdout);
-    linux_stderr.state = IO_STATE_CLOSED;
+    linux_stderr.state = IO_STATE_OPENED;
     linux_stderr.internal = (void*)2;
     linux_stderr.handler = linux_handler;
     set_fd(2, linux_stderr);
