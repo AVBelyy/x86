@@ -33,7 +33,8 @@ struct CODE *code_load(char *fname)
     p->text = malloc(p->regs[7] = (1<<((header[0]>>4)+5))+sz);
     fread(p->text, sz, 1, f);
     for(i = 0; i < shared_cnt; i++) p->text[shared[i]] = 0x80|p->pid;
-    fclose(f);  
+    free(shared);
+    fclose(f);
     --p->regs[7];
     p->regs[7] += (0x80|p->pid)<<24;
     p->pc = p->text;
@@ -183,7 +184,7 @@ int code_exec(struct CODE *p)
             case 0x04:  // MOV REG MEM
             {
                 int mem, size, base, reg = get();
-                uint rel_addr = 0;
+                uint32_t rel_addr = 0;
                 uint8_t *addr;
                 get_mem_ptr();
                 memcpy(get_reg_ptr(reg), addr, size);
@@ -192,7 +193,7 @@ int code_exec(struct CODE *p)
             case 0x05:  // MOV MEM REG
             {
                 int reg, mem, base, size;
-                uint rel_addr = 0;
+                uint32_t rel_addr = 0;
                 uint8_t *addr;
                 get_mem_ptr();
                 reg = get();
@@ -202,7 +203,7 @@ int code_exec(struct CODE *p)
             case 0x06:  // MOV MEM CONST
             {
                 int mem, size, base;
-                uint rel_addr = 0;
+                uint32_t rel_addr = 0;
                 uint8_t *addr;
                 get_mem_ptr();
                 skip(1);
@@ -213,7 +214,7 @@ int code_exec(struct CODE *p)
             case 0x07:  // MOV MEM MEM
             {
                 int mem, size, base;
-                uint rel_addr = 0;
+                uint32_t rel_addr = 0;
                 uint8_t *addr, *dest;
                 get_mem_ptr();
                 dest = addr; rel_addr = 0;
@@ -231,7 +232,7 @@ int code_exec(struct CODE *p)
             case 0x09:  // XCHG REG MEM
             {
                 int mem, size, base, reg = get();
-                uint rel_addr = 0, *pt = get_reg_ptr(reg), z = *pt; // z <- x
+                uint32_t rel_addr = 0, *pt = get_reg_ptr(reg), z = *pt; // z <- x
                 uint8_t *addr;
                 get_mem_ptr();
                 memcpy(pt, addr, size); // x <- y
@@ -241,7 +242,7 @@ int code_exec(struct CODE *p)
             case 0x0A:   // XCHG MEM MEM
             {
                 int mem, size, base;
-                uint rel_addr = 0, z = 0;
+                uint32_t rel_addr = 0, z = 0;
                 uint8_t *addr, *dest;
                 get_mem_ptr(); // read X
                 dest = addr;
@@ -293,7 +294,7 @@ int code_exec(struct CODE *p)
             case 0x0F:  // PUSH MEM
             {
                 int mem, size, base;
-                uint rel_addr = 0;
+                uint32_t rel_addr = 0;
                 uint8_t *addr;
                 get_mem_ptr();
                 push(addr, size);
@@ -308,7 +309,7 @@ int code_exec(struct CODE *p)
             case 0x11:  // POP MEM
             {
                 int mem, size, base;
-                uint rel_addr = 0;
+                uint32_t rel_addr = 0;
                 uint8_t *addr;
                 get_mem_ptr();
                 pop(addr, size);
@@ -338,7 +339,7 @@ int code_exec(struct CODE *p)
             case 0x14:  // JMP MEM
             {
                 int mem, size, base;
-                uint rel_addr;
+                uint32_t rel_addr;
                 uint8_t *addr;
             jmp_mem:
                 rel_addr = 0;
@@ -370,7 +371,7 @@ int code_exec(struct CODE *p)
             case 0x18:  // INT MEM
             {
                 int mem, size, base;
-                uint rel_addr = 0, buf = 0;
+                uint32_t rel_addr = 0, buf = 0;
                 uint8_t *addr;
                 get_mem_ptr();
                 memcpy(&buf, addr, size);
@@ -381,7 +382,7 @@ int code_exec(struct CODE *p)
             case 0x1B:  // DEC REG
             {
                 int reg = get(), size = reg_size[reg], power, tmp;
-                uint buf = 0, *ptr = get_reg_ptr(reg);
+                uint32_t buf = 0, *ptr = get_reg_ptr(reg);
                 uint64_t sign;
                 bclear(PF|ZF|SF|OF);
                 power = size*8-1;
@@ -400,7 +401,7 @@ int code_exec(struct CODE *p)
             case 0x1C:  // DEC MEM
             {
                 int mem, size, base, power, tmp;
-                uint rel_addr = 0, buf = 0;
+                uint32_t rel_addr = 0, buf = 0;
                 uint8_t *addr;
                 uint64_t sign;
                 bclear(PF|ZF|SF|OF);
@@ -429,7 +430,7 @@ int code_exec(struct CODE *p)
             case 0x26:  // SHR REG REG
             {
                 int x, y, tmp, power, size;
-                uint *ptr, val;
+                uint32_t *ptr, val;
                 uint64_t sign, buf;
             reg_reg:
                 x = get(); y = get(); size = reg_size[x]; power = size*8-1;
@@ -471,7 +472,7 @@ int code_exec(struct CODE *p)
             case 0x30:  // SHR REG CONST
             {
                 int reg, size, power, tmp;
-                uint val, *ptr, prev;
+                uint32_t val, *ptr, prev;
                 uint64_t sign, buf;
             reg_const:
                 reg = get(); size = get();
@@ -517,7 +518,7 @@ int code_exec(struct CODE *p)
             {
                 int reg, mem, size, base, power, tmp;
                 uint8_t *addr;
-                uint rel_addr, val, *ptr, prev;
+                uint32_t rel_addr, val, *ptr, prev;
                 uint64_t sign, buf;
             reg_mem:
                 reg = get(); power = reg_size[reg]*8-1;
@@ -562,7 +563,7 @@ int code_exec(struct CODE *p)
             {
                 int reg, mem, size, base, tmp, power;
                 uint8_t *addr;
-                uint rel_addr, prev, val;
+                uint32_t rel_addr, prev, val;
                 uint64_t sign, buf;
              mem_reg:
                 rel_addr = 0; buf = 0;
@@ -609,7 +610,7 @@ int code_exec(struct CODE *p)
             {
                 int mem, size, base, const_size, power, tmp;
                 uint8_t *addr;
-                uint rel_addr, const_buf;
+                uint32_t rel_addr, const_buf;
                 uint64_t sign, mem_buf;
             mem_const:
                 rel_addr = 0; mem_buf = 0; const_buf = 0;
@@ -657,7 +658,7 @@ int code_exec(struct CODE *p)
             {
                 int mem, size, base, power, tmp;
                 uint8_t *addr, *dest;
-                uint rel_addr, src_buf;
+                uint32_t rel_addr, src_buf;
                 uint64_t sign, dest_buf;
             mem_mem:
                 bclear(CF|PF|ZF|SF|OF);
@@ -874,7 +875,7 @@ int code_exec(struct CODE *p)
             case 0x99:  // LEA REG MEM
             {
                 int reg = get(), mem, size, base;
-                uint rel_addr = 0;
+                uint32_t rel_addr = 0;
                 get_mem();
                 memcpy(get_reg_ptr(reg), &rel_addr, size);
                 break;
@@ -883,7 +884,7 @@ int code_exec(struct CODE *p)
             {
                 int reg = get(), tmp;
                 int size = reg_size[reg]; int power = size*8-1;
-                uint *ptr = get_reg_ptr(reg), buf = 0;
+                uint32_t *ptr = get_reg_ptr(reg), buf = 0;
                 uint64_t sign;
                 bclear(CF|PF|ZF|SF|OF);
                 memcpy(&buf, ptr, size);
@@ -901,7 +902,7 @@ int code_exec(struct CODE *p)
             {
                 int mem, size, base, tmp, power;
                 uint8_t *addr;
-                uint rel_addr = 0, buf = 0;
+                uint32_t rel_addr = 0, buf = 0;
                 uint64_t sign;
                 bclear(CF|PF|ZF|SF|OF);
                 get_mem_ptr();
@@ -932,7 +933,7 @@ int code_exec(struct CODE *p)
             case 0xA2:  // NOT REG
             {
                 int reg = get(), size = reg_size[reg];
-                uint *ptr = get_reg_ptr(reg), buf = 0;
+                uint32_t *ptr = get_reg_ptr(reg), buf = 0;
                 memcpy(&buf, ptr, size);
                 buf = ~buf;
                 memcpy(ptr, &buf, size);
@@ -942,7 +943,7 @@ int code_exec(struct CODE *p)
             {
                 int mem, size, base;
                 uint8_t *addr;
-                uint rel_addr = 0, buf = 0;
+                uint32_t rel_addr = 0, buf = 0;
                 get_mem_ptr();
                 memcpy(&buf, addr, size);
                 buf = ~buf;
@@ -986,7 +987,7 @@ int code_exec(struct CODE *p)
             {
                 int mem, size, base;
                 uint8_t *addr;
-                uint rel_addr = 0, buf;
+                uint32_t rel_addr = 0, buf;
                 int32_t temp = 0;
                 get_mem_ptr();
                 buf = (uint32_t)((pid<<24)+pc-text);
@@ -1061,13 +1062,22 @@ void x86_exit(void *p)
 {
     fprintf(stderr, ":: raised X86_EXIT signal\n");
     // destroy all program's data
-    struct STACK *cur = head;
+    struct STACK *prev, *cur = head;
     while(cur != NULL)
     {
-        code_free(cur->item);
-        cur = cur->next;
+        prev = cur;
+        cur  = cur->next;
+        code_free(prev->item);
+        free(prev);
     }
-
+    // destroy signals' stack
+    struct SIGNALS *sig_prev, *sig_cur = sig_head;
+    while(sig_cur != NULL)
+    {
+        sig_prev = sig_cur;
+        sig_cur  = sig_cur->next;
+        free(sig_prev);
+    }
     // signal action
     exit(0);
 }

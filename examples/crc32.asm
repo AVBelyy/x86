@@ -67,16 +67,15 @@ Crc32Table  dd      0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA
             dd      0xB3667A2E, 0xC4614AB8, 0x5D681B02, 0x2A6F2B94
             dd      0xB40BBE37, 0xC30C8EA1, 0x5A05DF1B, 0x2D02EF8D
 
-^itoa_buf   dd      0, 0, 0
+^itoa_buf   dd      0, 0
 source_msg  db      "Source: "
-crc32_msg   db      0xA, "CRC-32: "
+crc32_msg   db      0xA, "CRC-32: 0x"
 
 test_string db      "Hello world. Wanna check my CRC-32?"
 test_strlen =       $-test_string
 
 
-@crc32:
-            enter
+crc32:      enter
             push    ebx
             mov     eax,0xFFFFFFFF
             mov     ebx,[ebp+8]
@@ -96,8 +95,8 @@ test_strlen =       $-test_string
             leave
             ret
 
-_start:
-            ; print source_msg
+
+_start:     ; print source_msg
             mov     eax,4
             mov     ebx,1
             mov     ecx,source_msg
@@ -113,7 +112,7 @@ _start:
             mov     eax,4
             mov     ebx,1
             mov     ecx,crc32_msg
-            mov     edx,9
+            mov     edx,11
             int     0x32
             ; calculate CRC-32
             push    dword test_strlen
@@ -121,10 +120,11 @@ _start:
             call    crc32
             add     esp,8
             ; convert and print CRC-32
+            push    dword 16
             push    ^itoa_buf
             push    eax
             call    itoa
-            add     esp,8
+            add     esp,12
             mov     ecx,eax
             mov     edx,ebx
             mov     eax,4

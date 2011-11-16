@@ -23,10 +23,11 @@ out_array:  mov     eax,4           ;  print message
             mov     ebx,1
             int     0x32
             mov     esi,0
-.loop:      push    ^buf
+.loop:      push    dword 10
+            push    ^buf
             push    dword [array+esi*4]
             call    itoa
-            add     esp,8
+            add     esp,12
             mov     ecx,eax
             mov     edx,ebx
             mov     eax,4

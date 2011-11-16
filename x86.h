@@ -6,12 +6,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#if UINTPTR_MAX == 0xFFFFFFFF // 32-bit
-#define uint uint32_t// uint
-#elif UINTPTR_MAX == 0xFFFFFFFFFFFFFFFF // 64-bit
-#define uint uint64_t// uint
-#endif
-
 #define TRUE            1
 #define FALSE           0
 
