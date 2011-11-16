@@ -149,6 +149,18 @@ void int32_handler(void *p)
             caller->EAX = io_link(oldpath, newpath);
             break;
         }
+        case 0xC0: // malloc
+        {
+            /* ebx - size_t size; */
+            caller->EAX = memmgr_alloc(EBX);
+            break;
+        }
+        case 0xC1: // free
+        {
+            /* ebx - void *ptr; */
+            memmgr_free(EBX);
+            break;
+        }
     }
 }
 

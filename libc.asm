@@ -1,5 +1,5 @@
 section .header
-    pid = 0x01
+    pid = 0x05
 
 section .text
 
