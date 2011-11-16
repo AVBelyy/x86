@@ -5,7 +5,9 @@
 
 #include "lib/core/io.h"
 
-#if defined(_WIN32) || defined(WIN32)
+#if defined(_AVR)
+    #include "lib/platform/avr.h"
+#elif defined(_WIN32) || defined(WIN32)
     #include "lib/platform/win32.h"
 #else
     #include "lib/platform/linux.h"
