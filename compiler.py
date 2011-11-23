@@ -276,7 +276,8 @@ class _:
         (   0xA8,    "ret",     "const",  "",       ""    ),    # (√)
         (   0xA9,    "enter",   "",       "",       ""    ),    # (√)
         (   0xAA,    "enter",   "const",  "const",  ""    ),    # (√)
-        (   0xAB,    "leave",   "",       "",       ""    )     # (√)
+        (   0xAB,    "leave",   "",       "",       ""    ),    # (√)
+        (   0xAC,    "lea",     "mem",    "mem",    ""    )     # (√)
     )
 
     decode = dict( sizes.values() )
@@ -843,9 +844,9 @@ class Parser:
                         self.push( d_code + s_code )
                 else:
                     raise _.SyntaxError, (self, "invalid operand: '%s'" % source[1].group( 0 ))
-            # 1 - reg ; 2 - mem
+            # 1 - reg, mem ; 2 - mem
             elif cmd == "lea":
-                if (d_type, s_type) == ("reg", "mem"):
+                if (d_type, s_type) in ( ("reg", "mem"), ("mem", "mem") ):
                     if not s_code[0]&0xF: s_code[0] |= d_size
                     self.push( d_code + s_code )
                 else:
@@ -968,7 +969,7 @@ class Parser:
             s_shared.extend( self.pack( x, 4 ) )
         # parse 'export' section
         export = self.sections["export"]
-        if len ( export ):
+        if len ( export ) and self.sections["header"][1]:
             inc = open( os.path.basename( os.path.splitext( opts.file or path )[0] ) + ".obj", "w" )
             maxlen = max( map( len, export.values() ) )
             items = sorted( [(int( k ),v) for k,v in export.items()] )
