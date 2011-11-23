@@ -58,18 +58,12 @@ uint8_t *search(int pid)
     return NULL;
 }
 
-void sig_handler(void *p)
-{
-    // EAX: action (0 - raise, 1 - attach)
-    // EBX: sig number
-    // ECX(optional): handler ptr
-}
-
-void sig_attach(int sig, handler h)
+void sig_attach(int sig, sighandler h, void *data)
 {
     struct SIGNALS *new = malloc(sizeof(struct SIGNALS));
     new->sig = sig;
     new->h = h;
+    new->data = data;
     new->next = sig_head;
     sig_head = new;
 }
@@ -80,9 +74,30 @@ void sig_raise(int sig, void *p)
     while(cur != NULL)
     {
         if(cur->sig == sig)
-            cur->h(p);
+            cur->h(p, cur->data);
         cur = cur->next;
     }
+}
+
+void code_sighandler(void *zero, void *data)
+{
+    struct CODE *p;
+    struct STACK *cur = head;
+    while(cur != NULL)
+    {
+        if(cur->item->pid == ((code_sigh*)data)->pid)
+        {
+            p = cur->item;
+            break;
+        }
+        cur = cur->next;
+    }
+    free(data);
+    uint32_t *regs = p->regs;
+    uint8_t  *text = p->text;
+    uint32_t buf   = (uint32_t)(((p->pid)<<24)+(p->pc)-text);
+    push(&buf, 4);
+    p->pc = text+ECX;
 }
 
 void int32_handler(void *p)
@@ -101,7 +116,7 @@ void int32_handler(void *p)
                edx - size_t count; */
             uint8_t *buf;
             calc_mem(buf, ECX);
-            caller->EAX = io_read(EBX, buf, EDX);
+            EAX = io_read(EBX, buf, EDX);
             break;
         }
         case 0x04: // write
@@ -111,7 +126,7 @@ void int32_handler(void *p)
                edx - size_t count; */
             uint8_t *buf;
             calc_mem(buf, ECX);
-            caller->EAX = io_write(EBX, buf, EDX);
+            EAX = io_write(EBX, buf, EDX);
             break;
         }
         case 0x05: // open
@@ -121,13 +136,13 @@ void int32_handler(void *p)
                edx - mode_t mode; */
             uint8_t *pathname;
             calc_mem(pathname, EBX);
-            caller->EAX = io_open(pathname, ECX, EDX);
+            EAX = io_open(pathname, ECX, EDX);
             break;
         }
         case 0x06: // close
         {
             /* ebx - int fd; */
-            caller->EAX = io_close(EBX);
+            EAX = io_close(EBX);
             break;
         }
         case 0x08: // creat
@@ -136,7 +151,7 @@ void int32_handler(void *p)
                ecx - mode_t mode; */
             uint8_t *pathname;
             calc_mem(pathname, EBX);
-            caller->EAX = io_creat(pathname, ECX);
+            EAX = io_creat(pathname, ECX);
             break;
         }
         case 0x09: // link
@@ -146,13 +161,13 @@ void int32_handler(void *p)
             uint8_t *oldpath,*newpath;
             calc_mem(oldpath, EBX);
             calc_mem(newpath, ECX);
-            caller->EAX = io_link(oldpath, newpath);
+            EAX = io_link(oldpath, newpath);
             break;
         }
         case 0xC0: // malloc
         {
             /* ebx - size_t size; */
-            caller->EAX = memmgr_alloc(EBX);
+            EAX = memmgr_alloc(EBX);
             break;
         }
         case 0xC1: // free
@@ -160,6 +175,42 @@ void int32_handler(void *p)
             /* ebx - void *ptr; */
             memmgr_free(EBX);
             break;
+        }
+        case 0xC2: // memcpy
+        {
+            /* ebx - size_t num;
+               esi - void *src;
+               edi - void *dst; */
+            uint8_t *src, *dst;
+            calc_mem(src, ESI);
+            calc_mem(dst, EDI);
+            memcpy(dst, src, EBX);
+            break;
+        }
+        case 0xC3: // memset
+        {
+            /* ebx - void *ptr;
+               ecx - int value;
+               edx - size_t num; */
+            uint8_t *ptr;
+            calc_mem(ptr, EBX);
+            memset(ptr, ECX, EDX);
+            break;
+        }
+        case 0xC4: // rand
+        {
+            /* ebx - int rand_max (UINT32_MAX if 0); */
+            EAX = rand() % (EBX ? EBX : UINT32_MAX);
+            break;
+        }
+        case 0xC5: // sig_attach
+        {
+            /* ebx - int sig_id;
+               ecx - void *ptr; */
+            code_sigh *cs = malloc(sizeof(code_sigh));
+            cs->pid = caller->pid;
+            cs->offset = ECX;
+            sig_attach(EBX, code_sighandler, cs);
         }
     }
 }
@@ -176,7 +227,7 @@ int code_exec(struct CODE *p)
         {
             case 0x01:  // DBG
             {
-                fprintf(stderr, "EAX=%d EBX=%d ECX=%d EDX=%d ; ", EAX, EBX, ECX, EDX);
+                fprintf(stderr, "EAX=%d EBX=%d ECX=%d EDX=%d ESI=%d EDI=%d; ", EAX, EBX, ECX, EDX, ESI, EDI);
                 fprintf(stderr, "CF=%d PF=%d ZF=%d SF=%d OF=%d\n", bget(CF), bget(PF), bget(ZF), bget(SF), bget(OF));
                 break;
             }
@@ -1058,7 +1109,19 @@ int code_exec(struct CODE *p)
                 pop(&EBP, 4);
                 break;
             }
+            case 0xAC:  // LEA MEM MEM
+            {
+                int mem, size, base;
+                uint32_t rel_addr = 0;
+                uint8_t *addr;
+                get_mem_ptr();
+                rel_addr = 0;
+                get_mem();
+                memcpy(addr, &rel_addr, size);
+                break;
+            }
         }
+        //p->pc = pc;
     }
 }
 
@@ -1098,11 +1161,11 @@ int main(int argc, char **argv)
 {
     char *app_path;
 
-    // init signal interrupt
-    set_intr(0, sig_handler);
+    // randomize
+    srand(time(NULL));
 
     // set X86_EXIT handler
-    sig_attach(X86_EXIT, x86_exit);
+    sig_attach(X86_EXIT, x86_exit, NULL);
 
     // init internal kernel parts (platform abstraction layer, libs, drivers, etc)
     io_init();

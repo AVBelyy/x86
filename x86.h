@@ -73,6 +73,11 @@
 #define X86_EXIT        1
 
 typedef void (*handler)(void*);
+typedef void (*sighandler)(void*, void*);
+typedef struct {
+    int             pid;
+    int             offset;
+} code_sigh;
 extern uint16_t flags;
 extern int pid_counter;
 extern int reg_size[];
@@ -81,25 +86,26 @@ extern handler inttable[INTTABLE_MAX];
 
 struct CODE
 {
-    uint32_t     *regs;
-    uint8_t      *text;
-    uint8_t      *pc;
-    int           pid;
-    int           cmp_flag;
-    int           ret_count;
+    uint32_t        *regs;
+    uint8_t         *text;
+    uint8_t         *pc;
+    int             pid;
+    int             cmp_flag;
+    int             ret_count;
 };
 
 struct STACK
 {
-    struct CODE  *item;
-    struct STACK *next;
+    struct CODE     *item;
+    struct STACK    *next;
 };
 
 struct SIGNALS
 {
-    int            sig;
-    handler        h;
-    struct SIGNALS *next;
+    int             sig;
+    sighandler      h;
+    void            *data;
+    struct SIGNALS  *next;
 };
 
 extern struct STACK *head;
@@ -109,6 +115,6 @@ struct CODE *code_load(char *);
 int code_exec(struct CODE *);
 int code_free(struct CODE *);
 uint8_t *search(int);
-void sig_attach(int, handler);
+void sig_attach(int, sighandler, void *);
 void sig_raise(int, void *);
 #endif
