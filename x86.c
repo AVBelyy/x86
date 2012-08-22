@@ -385,7 +385,7 @@ int code_exec(struct CODE *p)
                 reg = get();
                 pc = 0;
                 memcpy(&pc, get_reg_ptr(reg), reg_size[reg]);
-                pc+=(uint)text;
+                pc += (sizeof(void*) == 4) ? (uint32_t)text : (uint64_t)text;
                 break;
              }
             case 0x13:  // JMP CONST
@@ -396,7 +396,7 @@ int code_exec(struct CODE *p)
                 size = get(); addr = pc;
                 pc = 0;
                 memcpy(&pc, addr, size);
-                pc+=(uint)text;
+                pc += (sizeof(void*) == 4) ? (uint32_t)text : (uint64_t)text;
                 break;
             }
             case 0x14:  // JMP MEM
@@ -409,7 +409,7 @@ int code_exec(struct CODE *p)
                 get_mem_ptr();
                 pc = 0;
                 memcpy(&pc, addr, size);
-                pc+=(uint)text;
+                pc += (sizeof(void*) == 4) ? (uint32_t)text : (uint64_t)text;
                 break;
             }
             case 0x15:  // EXIT
