@@ -18,6 +18,13 @@ int linux_handler(int action, struct X86_FILE *f, void *buf, int count)
         case IO_HANDLER_READ:
             return read(fd, buf, count);
             break;
+        case IO_HANDLER_SIZE:
+        {
+            struct stat statbuf;
+            fstat(fd, &statbuf);
+            return statbuf.st_size;
+            break;
+        }
         default:
             return -1;
     }
@@ -25,12 +32,17 @@ int linux_handler(int action, struct X86_FILE *f, void *buf, int count)
 
 int io_open(char *pathname, int flags, mode_t mode)
 {
-    int fd = -1, l_fd;
-    if((l_fd = open(pathname, flags, mode)) != -1 && (fd = io_free_file()) != -1)
+    int fd = io_opened_files+8, l_fd;
+    if((l_fd = open(pathname, flags, mode)) != -1)
     {
-        io_files[fd].state = IO_STATE_OPENED;
-        io_files[fd].internal = (void*)l_fd;
-        io_files[fd].handler = linux_handler;
+        struct X86_FILE f;
+        f.state = IO_STATE_OPENED;
+        f.internal = (void*)l_fd;
+        f.handler = linux_handler;
+        set_fd(fd, f);
+        io_opened_files++;
+    } else {
+        fd = -1;
     }
     return fd;
 }
@@ -53,4 +65,6 @@ void platform_init()
     linux_stderr.internal = (void*)2;
     linux_stderr.handler = linux_handler;
     set_fd(2, linux_stderr);
+    // randomize
+    srand(time(NULL));
 }

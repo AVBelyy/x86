@@ -15,26 +15,23 @@ struct CODE *code_load(char *fname)
     uint8_t header[8];
     uint32_t *shared;
     struct STACK *new = malloc(sizeof(struct STACK));
-    FILE *f = fopen(fname, "rb");
-    // get file size
-    fseek(f, 0, SEEK_END);
-    int sz = ftell(f) - 8;
-    fseek(f, 0, SEEK_SET);
+    int fd = io_open(fname, X86_RDONLY, X86_RDONLY);
+    int sz = io_size(fd) - 8;
     struct CODE *p = malloc(sizeof(struct CODE));
     // read 'header' and 'text' sections
-    fread(&header, 1, 8, f);
+    io_read(fd, &header, 8);
     p->regs = malloc(8*4);
     p->pid = header[1] & 0x80 ? header[1] & 0x7F : 64 + pid_counter++;
     shared_cnt = header[2] + (header[3] << 8);
     sz -= shared_cnt*4;
     shared = malloc(shared_cnt*4);
-    fread(shared, 4, shared_cnt, f);
+    io_read(fd, shared, 4*shared_cnt);
     for(i = 0; i < 8; i++) p->regs[i] = 0;
     p->text = malloc(p->regs[7] = (1<<((header[0]>>4)+5))+sz);
-    fread(p->text, sz, 1, f);
+    io_read(fd, p->text, sz);
     for(i = 0; i < shared_cnt; i++) p->text[shared[i]] = 0x80|p->pid;
     free(shared);
-    fclose(f);
+    io_close(fd);
     --p->regs[7];
     p->regs[7] += (0x80|p->pid)<<24;
     p->pc = p->text;
@@ -1160,9 +1157,6 @@ void x86_exit(void *p)
 int main(int argc, char **argv)
 {
     char *app_path;
-
-    // randomize
-    srand(time(NULL));
 
     // set X86_EXIT handler
     sig_attach(X86_EXIT, x86_exit, NULL);

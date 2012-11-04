@@ -1,3 +1,6 @@
+#ifndef __IO_H
+#define __IO_H
+
 // Config
 #define IO_MAX_FILES        40 // not less than 8!
 
@@ -9,6 +12,7 @@
 #define IO_HANDLER_CLOSE    0
 #define IO_HANDLER_WRITE    1
 #define IO_HANDLER_READ     2
+#define IO_HANDLER_SIZE     3
 
 // Macroses
 #define set_fd(f,s)         io_files[f]=s
@@ -24,3 +28,5 @@ int io_write(int, void*, int);
 
 extern int io_opened_files;
 extern struct X86_FILE io_files[IO_MAX_FILES];
+
+#endif

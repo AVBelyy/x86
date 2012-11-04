@@ -53,8 +53,8 @@ int io_creat(char *pathname, mode_t mode)
 
 int io_link(char *oldpath, char *newpath)
 {
-    // Windows & NTFS has awkward mechanism of symlinks
-    // Situation changes changes with Win Vista, but I still have WinXP so can't test CreateSymbolicLink :(
+    // Windows & NTFS has an awkward mechanism of symlinks
+    // Situation changed with Win Vista, but I still have WinXP so can't test CreateSymbolicLink :(
     //return !CreateSymbolicLink(oldpath, newpath) ? -1: 0;
     return -1;
 }
@@ -77,4 +77,6 @@ void platform_init()
     win32_stderr.internal = (void*)GetStdHandle(STD_ERROR_HANDLE);
     win32_stderr.handler = win32_handler;
     set_fd(2, win32_stderr);
+    // randomize
+    srand(time(NULL));
 }
