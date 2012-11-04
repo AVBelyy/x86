@@ -39,7 +39,7 @@
 #define skip_const()    skip(*pc+1)
 #define skip_mem()      int mem = get(); if(mem&0x70) skip(1); if(mem&(1<<7)) skip_const();
 #define get()           *pc++
-#define get_reg_ptr(id) ((id)<20 ? &regs[(id)%8] : (uint32_t*)((uint8_t*)&regs[(id)-20]+1))
+#define get_reg_ptr(id) ((id)<20 ? &regs[(id)&7] : (uint32_t*)((uint8_t*)&regs[(id)-20]+1))
 #define get_reg(id)     *get_reg_ptr(id)
 #define set_reg(id,vl)  *get_reg_ptr(id) = vl
 #define get_mem()       mem = get(); size = mem&0xF; if(mem&0x70) base = get(); \

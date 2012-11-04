@@ -1,5 +1,5 @@
 CC=gcc
-LIBS=-lncurses
+LIBS=
 CFLAGS=-O2 -w
 TARGET=x86
 SRC=$(TARGET).c lib/core/*.c
