@@ -4,10 +4,10 @@ struct STACK *heap;
 struct CODE  *p;
 struct MEMMGR_STACK *mmgr_heap = NULL;
 
-uint32_t memmgr_alloc(unsigned int length)
+uint32_t memmgr_alloc(uint64_t length)
 {
     int flag = FALSE;
-    uint32_t alloc_ptr = 0;
+    uint64_t alloc_ptr = 0;
     struct MEMMGR_STACK *prev = mmgr_heap, *cur = mmgr_heap;
     while(cur != NULL)
     {
@@ -21,13 +21,13 @@ uint32_t memmgr_alloc(unsigned int length)
     new->ptr = alloc_ptr; new->len = length; new->next = flag ? cur : NULL;
     if(alloc_ptr) prev->next = new;
     else mmgr_heap = new;
-    return (0x81<<24) | alloc_ptr;
+    return (0x81LL<<56) | alloc_ptr;
 }
 
-int memmgr_free(uint32_t ptr)
+int memmgr_free(uint64_t ptr)
 {
     struct MEMMGR_STACK *prev = NULL, *cur = mmgr_heap;
-    ptr &= 0xFFFFFF;
+    ptr &= 0xFFFFFFFFFFFFFFLL;
     while(cur != NULL)
     {
         if(cur->ptr == ptr)

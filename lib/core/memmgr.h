@@ -5,12 +5,12 @@
 
 struct MEMMGR_STACK
 {
-    uint32_t ptr;
-    unsigned int len;
+    uint64_t ptr;
+    uint64_t len;
     struct MEMMGR_STACK *next;
 };
 
-uint32_t memmgr_alloc(unsigned int);
-int memmgr_free(uint32_t);
+uint32_t memmgr_alloc(uint64_t);
+int memmgr_free(uint64_t);
 
 #endif

@@ -1,3 +1,6 @@
+;  (C) Anton Belyy, 2011, 2012
+;  quicksort implementation by Chuck Liang, Anton Belyy
+
 section .header
     pid = 0x05
 
@@ -8,89 +11,126 @@ itoa_table  db      "0123456789ABCDEF"
     ;;  Copies string from src to dst
     ;;  char *strcpy(char *dst, const char *src)
 @strcpy:    enter
-            mov     ecx,[ebp+8]
-            mov     edx,[ebp+12]
-            mov     eax,ecx             ;  save current dst value
-.loop:      mov     [ecx],[edx]
-            cmp     [ecx],'\0'
+            mov     rcx,[rbp+16]
+            mov     rdx,[rbp+24]
+            mov     rax,rcx             ;  save current dst value
+.loop:      mov     [rcx],[rdx]
+            cmp     [rcx],'\0'
             je      .return
-            inc     ecx
-            inc     edx
+            inc     rcx
+            inc     rdx
             jmp     .loop
 .return:    leave
             ret
 
 
-    ;;  Converts 32-bit integer into string
+    ;;  Converts 64-bit integer into string
     ;;  char *itoa(int value, char *str, int base)
 @itoa:      enter
-            push    edi
-            mov     edi,[ebp+16]
-            mov     eax,[ebp+12]
-            mov     ecx,[ebp+8]
-            mov     edx,ecx
-.count:     inc     eax
-            div     edx,edi
+            push    rdi
+            mov     rdi,[rbp+32]
+            mov     rax,[rbp+24]
+            push    rax
+            mov     rcx,[rbp+16]
+            test    rcx,1<<63
+            jz      .init
+            neg     rcx
+            mov     [rax],'-'
+            inc     rax
+.init:      mov     rdx,rcx
+.count:     inc     rax
+            div     rdx,rdi
             jnz     .count
-            mov     [eax],'\0'
-            mov     ebx,eax
-.loop:      dec     eax
-            mov     edx,ecx
-            mod     edx,edi
-            div     ecx,edi
-            mov     [eax],[itoa_table+edx]
-            test    ecx,ecx
+            mov     [rax],'\0'
+            mov     rbx,rax
+.loop:      dec     rax
+            mov     rdx,rcx
+            mod     rdx,rdi
+            div     rcx,rdi
+            mov     [rax],[itoa_table+rdx]
+            test    rcx,rcx
             jnz     .loop
-            sub     ebx,eax
-            pop     edi
+            pop     rax
+            sub     rbx,rax
+            pop     rdi
+            leave
+            ret
+
+
+    ;;  Searches the sorted array
+    ;;  int bsearch(int key, int array[], int size)
+@bsearch:   enter
+            push    rsi
+            mov     rcx,0
+            mov     rdx,[rbp+32]
+            dec     rdx
+            mov     rsi,[rbp+24]
+.loop:      cmp     rcx,rdx
+            jg      .failure
+            lea     rax,[rcx+rdx]
+            shr     rax,1
+            cmp     qword [rbp+16],qword [rax*8+rsi]
+            jl      .smaller
+            jg      .larger
+            jmp     .success
+.smaller:   mov     rdx,rax
+            dec     rdx
+            jmp     .loop
+.larger:    mov     rcx,rax
+            inc     rcx
+            jmp     .loop
+.failure:   mov     rax,qword -1
+.success:   pop     rsi
             leave
             ret
 
 
 quickaux:   enter
             pusha
-            mov     ebx,[ebp+8]     ;  start of partition
+            mov     rdx,[rbp+16]    ;  save start of partition in rdx
+            mov     rdi,[rbp+24]    ;  and end of partition in rdi
+            mov     rbx,rdx
+            mov     rcx,rdi
     ;;  find pivot index:
-.ploop:     cmp     ebx,[ebp+12]    ;  last cell of partition?
-            jge     .qretrn         ;  no pivot, so exit
-            cmp     dword [ebx+4],dword [ebx]
-            jl      .pfound         ;  A[i]>A[i+1], pivot found
-            add     ebx,4           ;  next cell
+.ploop:     cmp     rbx,rdi         ;  last cell of partition?
+            jae     .qretrn         ;  no pivot, so exit
+            cmp     qword [rbx+8],qword [rbx]
+            jl      .pfound         ;  A[i+1]<A[i], pivot found
+            add     rbx,8           ;  next cell
             jmp     .ploop
 .pfound:
-    ;;  at this point, ebx holds mem address of pivot
+    ;;  at this point, rbx holds mem address of pivot
     ;;  now partition into < and >= pivot via repeated swapping.
-    ;;  use two counters: ebx and esi. ebx always points to the
+    ;;  use two counters: rbx and rsi. rbx always points to the
     ;;  first cell of second partition (what's >= pivot)
-            mov     ecx,[ebx]       ;  save pivot in ecx
-            lea     esi,[ebx+4]     ;  next cell
+            mov     rcx,[rbx]       ;  save pivot in rcx
+            lea     rsi,[rbx+8]     ;  next cell
 .tloop:                             ;  partitioning loop
-            cmp     ecx,[esi]       ;  compare pivot against element
+            cmp     rcx,[rsi]       ;  compare pivot against element
+            mov     rax,rsi
             jle     .noswap         ;  no swap if element >=pivot
-    ;;  swap [ebx] and [esi], advance both
-            xchg    dword [ebx],dword [esi]
-            add     ebx,4           ;  next cell must still be >= pivot
-.noswap:    add     esi,4           ;  goto next cell, preserve ebx
-            cmp     esi,[ebp+12]    ;  end of partition?
-            jle     .tloop          ;  next iteration of partition loop
-    ;;  at this point, ebx holds start addr of second partition
+    ;;  swap [rbx] and [rsi], advance both
+            xchg    qword [rbx],qword [rsi]
+            add     rbx,8           ;  next cell must still be >= pivot
+.noswap:    add     rsi,8           ;  goto next cell, preserve rbx
+            cmp     rsi,rdi         ;  end of partition?
+            jbe     .tloop          ;  next iteration of partition loop
+    ;;  at this point, rbx holds start addr of second partition
     ;;  (could be pivot itself).
     ;;  make recursive calls to quickaux
 
     ;;  first partition:
-            sub     ebx,4
-            push    ebx             ;  end of first paritition
-            mov     eax,[ebp+8]
-            push    eax             ;  start of first partition
+            sub     rbx,8
+            push    rbx             ;  end of first paritition
+            push    rdx             ;  start of first partition
             call    quickaux
-            add     esp,8           ;  deallocate params
+            add     rsp,16          ;  deallocate params
     ;;  second partition:
-            mov     eax,[ebp+12]
-            push    eax             ;  end of second partition
-            add     ebx,4
-            push    ebx             ;  start of second partition
+            push    rdi             ;  end of second partition
+            add     rbx,8
+            push    rbx             ;  start of second partition
             call    quickaux
-            add     esp,8
+            add     rsp,16
 .qretrn:    popa
             leave
             ret
@@ -100,16 +140,16 @@ quickaux:   enter
     ;;  void qsort(int *A, int start, int end)
 @qsort:     enter
             pusha
-            mov     ebx,[ebp+8]     ;  start addr of array
-            mov     eax,[ebp+16]    ;  end index of partition
-            lea     eax,[4*eax+ebx] ;  multiply by 4: sizeof(int)==4
-                                    ;  eax holds end addr of partition
-            mov     ecx,[ebp+12]    ;  start index of partition
-            lea     ecx,[4*ecx+ebx] ;  start addr of partition
-            push    eax             ;  quickaux expects start and end 
-            push    ecx             ;  addresses of partition as arguments.
+            mov     rbx,[rbp+16]    ;  start addr of array
+            mov     rax,[rbp+32]    ;  end index of partition
+            lea     rax,[8*rax+rbx] ;  multiply by 8: sizeof(int)==8
+                                    ;  rax holds end addr of partition
+            mov     rcx,[rbp+24]    ;  start index of partition
+            lea     rcx,[8*rcx+rbx] ;  start addr of partition
+            push    rax             ;  quickaux expects start and end 
+            push    rcx             ;  addresses of partition as arguments.
             call    quickaux
-            add     esp,8
+            add     rsp,16
             popa
             leave
             ret
