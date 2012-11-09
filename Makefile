@@ -15,11 +15,9 @@ all: linux
 
 linux: apps
 	$(CC) $(CFLAGS) $(SRC) lib/platform/linux.c $(LIBS) -o $(OUT)
-	./$(OUT)
 
 win32: apps
 	$(CC) $(CFLAGS) $(SRC) lib/platform/win32.c $(LIBS) -o $(OUT).exe
-	.\$(OUT).exe
 
 avr: apps
 	avr-gcc $(AVR_CFLAGS) -c lib/platform/$(AVR_MCU)/*.c
