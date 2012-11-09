@@ -9,40 +9,50 @@ class _:
     BYTE    =    1
     WORD    =    2
     DWORD   =    4
+    QWORD   =    8
 
     registers = {
     #   regname         id    size
-        "eax":     (    0,    DWORD   ),
-        "ebx":     (    1,    DWORD   ),
-        "ecx":     (    2,    DWORD   ),
-        "edx":     (    3,    DWORD   ),
-        "esi":     (    4,    DWORD   ),
-        "edi":     (    5,    DWORD   ),
-        "ebp":     (    6,    DWORD   ),
-        "esp":     (    7,    DWORD   ),
-        "ax":      (    8,    WORD    ),
-        "bx":      (    9,    WORD    ),
-        "cx":      (    10,   WORD    ),
-        "dx":      (    11,   WORD    ),
-        "si":      (    12,   WORD    ),
-        "di":      (    13,   WORD    ),
-        "bp":      (    14,   WORD    ),
-        "sp":      (    15,   WORD    ),
-        "al":      (    16,   BYTE    ),
-        "bl":      (    17,   BYTE    ),
-        "cl":      (    18,   BYTE    ),
-        "dl":      (    19,   BYTE    ),
-        "ah":      (    20,   BYTE    ),
-        "bh":      (    21,   BYTE    ),
-        "ch":      (    22,   BYTE    ),
-        "dh":      (    23,   BYTE    )
+        "rax":     (    0,    QWORD   ),
+        "rbx":     (    1,    QWORD   ),
+        "rcx":     (    2,    QWORD   ),
+        "rdx":     (    3,    QWORD   ),
+        "rsi":     (    4,    QWORD   ),
+        "rdi":     (    5,    QWORD   ),
+        "rbp":     (    6,    QWORD   ),
+        "rsp":     (    7,    QWORD   ),
+        "eax":     (    8,    DWORD   ),
+        "ebx":     (    9,    DWORD   ),
+        "ecx":     (    10,   DWORD   ),
+        "edx":     (    11,   DWORD   ),
+        "esi":     (    12,   DWORD   ),
+        "edi":     (    13,   DWORD   ),
+        "ebp":     (    14,   DWORD   ),
+        "esp":     (    15,   DWORD   ),
+        "ax":      (    16,   WORD    ),
+        "bx":      (    17,   WORD    ),
+        "cx":      (    18,   WORD    ),
+        "dx":      (    19,   WORD    ),
+        "si":      (    20,   WORD    ),
+        "di":      (    21,   WORD    ),
+        "bp":      (    22,   WORD    ),
+        "sp":      (    23,   WORD    ),
+        "al":      (    24,   BYTE    ),
+        "bl":      (    25,   BYTE    ),
+        "cl":      (    26,   BYTE    ),
+        "dl":      (    27,   BYTE    ),
+        "ah":      (    28,   BYTE    ),
+        "bh":      (    29,   BYTE    ),
+        "ch":      (    30,   BYTE    ),
+        "dh":      (    31,   BYTE    )
     }
 
     sizes = {
     #    sizename        id        size
-        "byte":     (    BYTE,     BYTE,    ),
-        "word":     (    WORD,     WORD,    ),
-        "dword":    (    DWORD,    DWORD,   )
+        "byte":     (    BYTE,     BYTE     ),
+        "word":     (    WORD,     WORD     ),
+        "dword":    (    DWORD,    DWORD    ),
+        "qword":    (    QWORD,    QWORD    )
     }
 
     datadirs = {
@@ -50,7 +60,8 @@ class _:
         "db":       BYTE,
         "dw":       WORD,
         "du":       WORD,
-        "dd":       DWORD
+        "dd":       DWORD,
+        "dq":       QWORD
     }
 
     opcodes = (
@@ -171,9 +182,9 @@ class _:
         (   0x69,    "ja",      "reg",    "",       ""    ),    # (√)
         (   0x6A,    "ja",      "const",  "",       ""    ),    # (√)
         (   0x6B,    "ja",      "mem",    "",       ""    ),    # (√)
-        (   0x69,    "jbe",     "reg",    "",       ""    ),    # (√)
-        (   0x6A,    "jbe",     "const",  "",       ""    ),    # (√)
-        (   0x6B,    "jbe",     "mem",    "",       ""    ),    # (√)
+        (   0x69,    "jnbe",    "reg",    "",       ""    ),    # (√)
+        (   0x6A,    "jnbe",    "const",  "",       ""    ),    # (√)
+        (   0x6B,    "jnbe",    "mem",    "",       ""    ),    # (√)
         (   0x6C,    "jae",     "reg",    "",       ""    ),    # (√)
         (   0x6D,    "jae",     "const",  "",       ""    ),    # (√)
         (   0x6E,    "jae",     "mem",    "",       ""    ),    # (√)
@@ -261,12 +272,12 @@ class _:
         (   0x99,    "lea",     "reg",    "mem",    ""    ),    # (√)
         (   0x9A,    "neg",     "reg",    "",       ""    ),    # (√)
         (   0x9B,    "neg",     "mem",    "",       ""    ),    # (√)
-        (   0x9C,    "jcxz",    "reg",    "",       ""    ),    # (√)
-        (   0x9D,    "jcxz",    "const",  "",       ""    ),    # (√)
-        (   0x9E,    "jcxz",    "mem",    "",       ""    ),    # (√)
-        (   0x9F,    "jecxz",   "reg",    "",       ""    ),    # (√)
-        (   0xA0,    "jecxz",   "const",  "",       ""    ),    # (√)
-        (   0xA1,    "jecxz",   "mem",    "",       ""    ),    # (√)
+        (   0x9C,    "jecxz",   "reg",    "",       ""    ),    # (√)
+        (   0x9D,    "jecxz",   "const",  "",       ""    ),    # (√)
+        (   0x9E,    "jecxz",   "mem",    "",       ""    ),    # (√)
+        (   0x9F,    "jrcxz",   "reg",    "",       ""    ),    # (√)
+        (   0xA0,    "jrcxz",   "const",  "",       ""    ),    # (√)
+        (   0xA1,    "jrcxz",   "mem",    "",       ""    ),    # (√)
         (   0xA2,    "not",     "reg",    "",       ""    ),    # (√)
         (   0xA3,    "not",     "mem",    "",       ""    ),    # (√)
         (   0xA4,    "call",    "reg",    "",       ""    ),    # (√)
@@ -315,14 +326,14 @@ class _:
 
 class Parser:
     # regexp
-    t_int           =    r"(?i)0x[\dabcdef]+|[\dabcdef]+h|[01]+b|\d+"
+    t_int           =    r"(?i)(?:[-~]?(?:0x[\dabcdef]+|[\dabcdef]+h|[01]+b|\d+))"
     t_string        =    r"\'.*?\'|\".*?\""
     t_name          =    r"[_a-zA-Z\$\.@\^][\w\.@:]*"
     t_operator      =    r"<<|>>|\+|-|\*\*|\*|/|%|\||&|\^"
     t_operand       =    r"|".join( ( t_name, t_string, t_int ) )
-    t_term          =    r"(\(\s*)*(?:(\~)\s*)?(%s)(\s*\))*" % t_operand
+    t_term          =    r"(\(\s*)*(?:(\~|\-)\s*)?(%s)(\s*\))*" % t_operand
     t_expr          =    r"(?:%s)?\s*(?:(%s)\s*(?:%s)\s*)?" % ( t_term, t_operator, t_term )
-    t_term_match    =    r"(?:\(\s*)*(?:\~\s*)?\s*(?:%s)(?:\s*\))*" % t_operand
+    t_term_match    =    r"(?:\(\s*)*(?:\~|\-\s*)?\s*(?:%s)(?:\s*\))*" % t_operand
     t_expr_match    =    r"(?:%s)\s*(?:(?:%s)\s*(?:%s)\s*)*" % ( t_term_match, t_operator, t_term_match )
     t_size          =    r"|".join( _.sizes.keys() )
     t_reg           =    r"(?i)" + "|".join( _.registers.keys() )
@@ -363,7 +374,7 @@ class Parser:
     ]
 
     class Deferred:
-        default_size = _.DWORD    # deferred expressions are 32 bits
+        default_size = _.QWORD    # deferred expressions are 64-bit
         def __init__( self, parser, expr, last_label, curln ):
             self.parser = parser
             self.expr = expr
@@ -398,10 +409,11 @@ class Parser:
         return out
 
     def get_int( self, op ):
-        op = op.lower()
-        if   op.startswith( "0x" ):    op = int( op[2:],  16 )
-        elif op.endswith("h"):         op = int( op[:-1], 16 )
-        elif op.endswith("b"):         op = int( op[:-1], 2 )
+        op, l = op.lower(), len(op)
+        if   op[:2] == "0x" and l > 2:  op = int( op[2:],  16 )
+        elif op[-1] == "h"  and l > 1:  op = int( op[:-1], 16 )
+        elif op[-1] == "b"  and l > 1:  op = int( op[:-1], 2 )
+        elif op[0]  == "0"  and l > 1:  op = int( op[1:],  8 )
         else:
             try:    op = int( op )
             except: raise _.TypeError, (self, "not an int: '%s'" % op)
@@ -482,7 +494,13 @@ class Parser:
         for i in xrange( len( priority ) ):
             pr = priority[i]
             op = tokens[pr]
-            if op == "~":
+            # unary operations have to be considered separately
+            if op == "-" and not pr:
+                if not tokens[pr+1].isdigit(): continue
+                tokens[pr] = -int( tokens[pr+1] )
+                del tokens[pr+1]
+                delta = 1
+            elif op == "~":
                 if not tokens[pr+1].isdigit(): continue
                 tokens[pr] = ~int( tokens[pr+1] )
                 del tokens[pr+1]
@@ -506,7 +524,7 @@ class Parser:
         detected = None
         for reg, ret in rules:
             match = re.match( reg, src )
-            if match and match.group(0) == src:
+            if match and match.group( 0 ) == src:
                 detected = ret, match
         return detected
 
@@ -540,7 +558,7 @@ class Parser:
         elif type == "const":
             size, const = match.groups()
             const = self.calculate( const )
-            if isinstance(const, Parser.Deferred): # deferred expression
+            if isinstance( const, Parser.Deferred ): # deferred expression
                 size = _.decode[Parser.Deferred.default_size]
                 return "const", size, [const] + [0]*(size-1)
             else:
@@ -548,12 +566,6 @@ class Parser:
                 packed = self.pack( const, size )
                 return "const", _.decode[len( packed )], packed
         elif type == "mem":
-            size, addr1, addr2 = match.groups()
-            addr = addr1 or addr2
-            regs = [key for key in _.registers if key[0] == "e"]
-            tokens, pr = self.calculate( addr, True )
-            flags = 0
-            p = [0,0,0,0]
             def mark( check, *flist ):
                 F = flags
                 for f in flist:
@@ -561,6 +573,13 @@ class Parser:
                        raise _.SyntaxError, (self, "invalid address: '%s'" % addr)
                     F |= 1<<f
                 return F
+
+            size, addr1, addr2 = match.groups()
+            addr = addr1 or addr2
+            regs = [key for key in _.registers if key[0] == "r"]
+            tokens, pr = self.calculate( addr, True )
+            flags = 0
+            p = [0,0,0,0]
             for i in pr:
                 # make correct order
                 x, op, y = tokens[i-1], tokens[i], tokens[i+1]
@@ -570,10 +589,10 @@ class Parser:
                 op = tokens[0]
                 if   op.lower() in regs:
                     p[2] = _.registers[op.lower()][0]
-                    flags = mark(False, 2)
+                    flags = mark( False, 2 )
                 elif op.isdigit():
                     p[3] = self.pack( int( op ) )
-                    flags = mark(False, 3)
+                    flags = mark( False, 3 )
                 else:
                     raise _.SyntaxError, (self, "invalid operand in address: '%s'" % op)
             for i in pr:
@@ -583,18 +602,18 @@ class Parser:
                         p[0] = p[0] if flags&(1<<0) else int( log( int( y ), 2) )
                         p[1] = p[1] if flags&(1<<1) else _.registers[x.lower()][0]
                         tokens[i+1] = x
-                        flags = mark(True, 0, 1)
+                        flags = mark( True, 0, 1 )
                     elif (x.lower() in regs) and (op == "*") and y in ("3", "5", "9"):
                         p[0] = p[0] if flags&(1<<0) else int( log( int( y )-1, 2) )
                         p[1] = p[1] if flags&(1<<1) else _.registers[x.lower()][0]
                         p[2] = p[2] if flags&(1<<2) else _.registers[x.lower()][0]
                         tokens[i+1] = x
-                        flags = mark(True, 0, 1, 2)
+                        flags = mark( True, 0, 1, 2 )
                     elif (x.lower() in regs) and (op  == "+") and (y.lower() in regs):
                         p[1] = p[1] if flags&(1<<1) else _.registers[x.lower()][0]
                         p[2] = p[2] if flags&(1<<2) else _.registers[y.lower()][0]
-                        flags = mark(False, 0, 1)
-                        flags = mark(True, 2)
+                        flags = mark( False, 0, 1 )
+                        flags = mark( True, 2 )
                     elif (x.isdigit() and (op in ("+", "-")) and (y.lower() in regs)) \
                       or ((x.lower() in regs) and (op in ("+", "-")) and y.isdigit()):
                         if x.isdigit(): x, y = y, x
@@ -603,7 +622,7 @@ class Parser:
                         if y < 0:    int_size = 4
                         p[1] = p[1] if flags&(1<<1) else _.registers[x.lower()][0]
                         p[3] = p[3] if flags&(1<<3) else  self.pack( y, int_size )
-                        flags = mark(False, 1, 3)
+                        flags = mark( False, 1, 3 )
                     else:
                         raise _.SyntaxError, (self, "invalid address: '%s'" % addr)
                 else:
@@ -652,7 +671,7 @@ class Parser:
                             map( lambda x: parsed.extend( self.pack(x, size) ), chunk )
                         else:
                             chunk = self.calculate( x )
-                            if isinstance(chunk, Parser.Deferred): # deferred expression
+                            if isinstance( chunk, Parser.Deferred ): # deferred expression
                                 sz = _.decode[Parser.Deferred.default_size]
                                 parsed.extend( [chunk] + [0]*(sz-1) )
                             else:
@@ -720,8 +739,8 @@ class Parser:
             self.hooks.append( (block, name) )
         elif _close:
             name, block = _close.groups()
-            if (not self.hooks) or (name and name != self.hooks[len(self.hooks)-1][1]) \
-            or (block.lower() != "end" + self.hooks[len(self.hooks)-1][0][0]):
+            if (not self.hooks) or (name and name != self.hooks[len( self.hooks )-1][1]) \
+            or (block.lower() != "end" + self.hooks[len( self.hooks )-1][0][0]):
                 raise _.SyntaxError, (self, "invalid close bracket")
             self.hooks.pop()
             return
@@ -752,7 +771,7 @@ class Parser:
         cmd1    = self.check_ln( Parser.t_cmd1, ln )        # 1-operand command?
         cmd2    = self.check_ln( Parser.t_cmd2, ln )        # 2-operand command?
         if section:
-            sect = (section.group(1) or section.group(2)).lower()
+            sect = (section.group( 1 ) or section.group( 2 )).lower()
             if sect not in ("header", "text"):
                 raise _.SyntaxError, (self, "unknown section: '%s'" % sect)
             self.cur = sect
@@ -760,16 +779,17 @@ class Parser:
             key, value = assign.groups()
             self.check_reserved( key )
             calc = self.calculate( value )
-            if type( calc ) not in (int, long): # deffered
+            if type( calc ) not in (int, long): # deferred
                 raise _.ValueError, (self, "unknown constant value: '%s'" % value)
             if self.cur == "header":
                 key = key.lower()
                 if key == "stack_size":
+                    if calc < 0 or calc > (1<<16)*128:
+                        raise _.SyntaxError, (self, "incorrect stack size: '%d'" % calc)
                     for x in xrange(16):
-                        if calc == (1<<x)*32: size = x
-                    try: size
-                    except:
-                        raise _.SyntaxError, (self, "incorrect stack size: '%s'" % calc)
+                        if calc <= (1<<x)*128:
+                            size = x
+                            break
                     self.sections["header"][0] &= ~(0xF<<4)
                     self.sections["header"][0] |=  size<<4
                 elif key == "pid":
@@ -799,12 +819,12 @@ class Parser:
                     parsed.append( self.calculate( x ) )
             if name.startswith("^"):
                 name = name[1:]
-                addr = str( int( addr )+4 )
-                self.sconstants["^"+name] = "dword[%s-4]" % name
+                addr = str( int( addr )+_.QWORD )
+                self.sconstants["^"+name] = "qword[%s-%d]" % (name, _.QWORD)
                 self.sections["shared"].append( str( int( addr )-1 ) )
-                self.push( self.pack( addr, 3 )+[0] )
+                self.push( self.pack( addr, 7 )+[0] )
             for x in parsed:
-                if isinstance(x, Parser.Deferred): # deferred expression
+                if isinstance( x, Parser.Deferred ): # deferred expression
                     size = _.decode[Parser.Deferred.default_size]
                     self.push( [x] + [0]*(size-1) )
                 else:
@@ -833,7 +853,9 @@ class Parser:
                     if not (d_code[0]&0xF or d_type == "reg"): d_code[0] |= s_size
                     if not (s_code[0]&0xF or s_type == "reg"): s_code[0] |= d_size
                     self.push( d_code + s_code )
-            # 1 - reg, mem ; 2 - reg, mem
+                else:
+                    raise _.SyntaxError, (self, "invalid operands '%s', '%s'" % (x[1].group( 0 ), y[1].group( 0 )))
+           # 1 - reg, mem ; 2 - reg, mem
             elif cmd == "xchg":
                 if (d_type, s_type) in ( ("reg", "reg"), ("reg", "mem"), ("mem", "reg"), ("mem", "mem") ):
                     if not (d_code[0]&0xF or d_type == "reg"): d_code[0] |= s_size
@@ -843,14 +865,14 @@ class Parser:
                     else:
                         self.push( d_code + s_code )
                 else:
-                    raise _.SyntaxError, (self, "invalid operand: '%s'" % source[1].group( 0 ))
+                   raise _.SyntaxError, (self, "invalid operands '%s', '%s'" % (x[1].group( 0 ), y[1].group( 0 )))
             # 1 - reg, mem ; 2 - mem
             elif cmd == "lea":
                 if (d_type, s_type) in ( ("reg", "mem"), ("mem", "mem") ):
                     if not s_code[0]&0xF: s_code[0] |= d_size
                     self.push( d_code + s_code )
                 else:
-                    raise _.SyntaxError, (self, "invalid operand: '%s'" % source[1].group( 0 ))
+                    raise _.SyntaxError, (self, "invalid operands '%s', '%s'" % (x[1].group( 0 ), y[1].group( 0 )))
             # 1 - const [; 2 - const]
             elif cmd == "enter":
                 self.push( [d_size] + d_code )
@@ -876,10 +898,13 @@ class Parser:
                     if not (op_code[0]&0xF or op_type == "reg"): op_code[0] |= _.BYTE
                     self.push( op_code )
                 elif op_type == "const":
-                    raise _.SyntaxError, (self, "invalid operand: '%s'" % op)
+                    raise _.SyntaxError, (self, "expected reg or memptr, found '%s'" % op)
             # 1 - const
             elif cmd == "ret":
-                self.push( [op_size] + op_code )
+                if op_type == "const":
+                    self.push( [op_size] + op_code )
+                else:
+                    raise _.SyntaxError, (self, "expected const, found '%s'" % op)
         elif cmd0:
             (cmd,) = cmd0.groups()
             self.push( [_.opcode( cmd )] )
@@ -901,10 +926,10 @@ class Parser:
                 else:
                     if name.startswith("^"):
                         name = name[1:]
-                        addr = str( int( addr )+4 )
-                        self.sconstants["^"+name] = "dword[%s-4]" % name
+                        addr = str( int( addr )+_.QWORD )
+                        self.sconstants["^"+name] = "qword[%s-%d]" % (name, _.QWORD)
                         self.sections["shared"].append( str( int( addr )-1 ) )
-                        self.push( self.pack( addr, 3 )+[0] )
+                        self.push( self.pack( addr, 7 )+[0] )
                     for key, value in struct[0].items():
                         self.sconstants["%s.%s" % (name, key)] = "%s+%s" % (name, value)
                     self.constants[name] = addr
@@ -929,7 +954,7 @@ class Parser:
 
     def __init__( self, path, opts ):
         self.sections = {
-            "header"    : [176, 0, 0, 0, 0, 0, 0, 0],
+            "header"    : [0xD0, 0, 0, 0, 0, 0, 0, 0],
             "export"    : {},
             "shared"    : [],
             "text"      : [[], 0]
@@ -966,7 +991,7 @@ class Parser:
             raise SyntaxError, "too many shared data"
         s_shared = []
         for x in shared:
-            s_shared.extend( self.pack( x, 4 ) )
+            s_shared.extend( self.pack( x, 8 ) )
         # parse 'export' section
         export = self.sections["export"]
         if len ( export ) and self.sections["header"][1]:
@@ -975,7 +1000,7 @@ class Parser:
             items = sorted( [(int( k ),v) for k,v in export.items()] )
             for addr, name in items:
                 # add address to .obj file
-                address = (int( self.sections["header"][1] )<<24) + (addr&0xFFFFFF)
+                address = (int( self.sections["header"][1] )<<56) + (addr&0xFFFFFFFFFFFFFF)
                 inc.write( "%s%s= 0x%X\n" % (name, " "*(maxlen-len( name )+1), address) )
             inc.close()
         # write 'header' and 'text' sections

@@ -2,7 +2,7 @@
 
 uint16_t flags;
 int pid_counter;
-int reg_size[]    = {4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1};
+int reg_size[]    = {8,8,8,8,8,8,8,8,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1};
 int pusha_order[] = {0,2,3,1,7,6,4,5};
 handler inttable[INTTABLE_MAX];
 
@@ -13,27 +13,27 @@ struct CODE *code_load(char *fname)
 {
     int i, shared_cnt;
     uint8_t header[8];
-    uint32_t *shared;
+    uint64_t *shared;
     struct STACK *new = malloc(sizeof(struct STACK));
     int fd = io_open(fname, X86_RDONLY, X86_RDONLY);
     int sz = io_size(fd) - 8;
     struct CODE *p = malloc(sizeof(struct CODE));
     // read 'header' and 'text' sections
     io_read(fd, &header, 8);
-    p->regs = malloc(8*4);
+    p->regs = malloc(8*sizeof(int64_t));
     p->pid = header[1] & 0x80 ? header[1] & 0x7F : 64 + pid_counter++;
     shared_cnt = header[2] + (header[3] << 8);
-    sz -= shared_cnt*4;
-    shared = malloc(shared_cnt*4);
-    io_read(fd, shared, 4*shared_cnt);
+    sz -= shared_cnt*sizeof(int64_t);
+    shared = malloc(shared_cnt*sizeof(int64_t));
+    io_read(fd, shared, shared_cnt*sizeof(int64_t));
     for(i = 0; i < 8; i++) p->regs[i] = 0;
-    p->text = malloc(p->regs[7] = (1<<((header[0]>>4)+5))+sz);
+    p->text = malloc(p->regs[7] = (1<<((header[0]>>4)+7))+sz);
     io_read(fd, p->text, sz);
     for(i = 0; i < shared_cnt; i++) p->text[shared[i]] = 0x80|p->pid;
     free(shared);
     io_close(fd);
     --p->regs[7];
-    p->regs[7] += (0x80|p->pid)<<24;
+    p->regs[7] += (uint64_t)(0x80|p->pid)<<56;
     p->pc = p->text;
     p->cmp_flag = FALSE;
     p->ret_count = 0;
@@ -90,131 +90,131 @@ void code_sighandler(void *zero, void *data)
         cur = cur->next;
     }
     free(data);
-    uint32_t *regs = p->regs;
+    uint64_t *regs = p->regs;
     uint8_t  *text = p->text;
-    uint32_t buf   = (uint32_t)(((p->pid)<<24)+(p->pc)-text);
-    push(&buf, 4);
-    p->pc = text+ECX;
+    uint64_t buf   = ((uint64_t)(p->pid)<<56)+(p->pc)-text;
+    push(&buf, 8);
+    p->pc = text+RCX;
 }
 
 void int32_handler(void *p)
 {
-    uint32_t *regs = caller->regs;
+    uint64_t *regs = caller->regs;
     uint8_t  *text = caller->text;
-    switch(EAX)
+    switch(RAX)
     {
         case 0x01: // exit
             sig_raise(X86_EXIT, p);
             break;
         case 0x03: // read
         {
-            /* ebx - int fd;
-               ecx - void *buf;
-               edx - size_t count; */
+            /* rbx - int fd;
+               rcx - void *buf;
+               rdx - size_t count; */
             uint8_t *buf;
-            calc_mem(buf, ECX);
-            EAX = io_read(EBX, buf, EDX);
+            calc_mem(buf, RCX);
+            RAX = io_read(RBX, buf, RDX);
             break;
         }
         case 0x04: // write
         {
-            /* ebx - int fd;
-               ecx - void *buf;
-               edx - size_t count; */
+            /* rbx - int fd;
+               rcx - void *buf;
+               rdx - size_t count; */
             uint8_t *buf;
-            calc_mem(buf, ECX);
-            EAX = io_write(EBX, buf, EDX);
+            calc_mem(buf, RCX);
+            RAX = io_write(RBX, buf, RDX);
             break;
         }
         case 0x05: // open
         {
-            /* ebx - char *pathname;
-               ecx - int flags;
-               edx - mode_t mode; */
+            /* rbx - char *pathname;
+               rcx - int flags;
+               rdx - mode_t mode; */
             uint8_t *pathname;
-            calc_mem(pathname, EBX);
-            EAX = io_open(pathname, ECX, EDX);
+            calc_mem(pathname, RBX);
+            RAX = io_open(pathname, RCX, RDX);
             break;
         }
         case 0x06: // close
         {
-            /* ebx - int fd; */
-            EAX = io_close(EBX);
+            /* rbx - int fd; */
+            RAX = io_close(RBX);
             break;
         }
         case 0x08: // creat
         {
-            /* ebx - char *pathname;
-               ecx - mode_t mode; */
+            /* rbx - char *pathname;
+               rcx - mode_t mode; */
             uint8_t *pathname;
-            calc_mem(pathname, EBX);
-            EAX = io_creat(pathname, ECX);
+            calc_mem(pathname, RBX);
+            RAX = io_creat(pathname, RCX);
             break;
         }
         case 0x09: // link
         {
-            /* ebx - const char *oldpath;
-               ecx - const char *newpath; */
-            uint8_t *oldpath,*newpath;
-            calc_mem(oldpath, EBX);
-            calc_mem(newpath, ECX);
-            EAX = io_link(oldpath, newpath);
+            /* rbx - const char *oldpath;
+               rcx - const char *newpath; */
+            uint8_t *oldpath, *newpath;
+            calc_mem(oldpath, RBX);
+            calc_mem(newpath, RCX);
+            RAX = io_link(oldpath, newpath);
             break;
         }
         case 0xC0: // malloc
         {
-            /* ebx - size_t size; */
-            EAX = memmgr_alloc(EBX);
+            /* rbx - size_t size; */
+            RAX = memmgr_alloc(RBX);
             break;
         }
         case 0xC1: // free
         {
             /* ebx - void *ptr; */
-            memmgr_free(EBX);
+            memmgr_free(RBX);
             break;
         }
         case 0xC2: // memcpy
         {
-            /* ebx - size_t num;
-               esi - void *src;
-               edi - void *dst; */
+            /* rbx - size_t num;
+               rsi - void *src;
+               rdi - void *dst; */
             uint8_t *src, *dst;
-            calc_mem(src, ESI);
-            calc_mem(dst, EDI);
-            memcpy(dst, src, EBX);
+            calc_mem(src, RSI);
+            calc_mem(dst, RDI);
+            memcpy(dst, src, RBX);
             break;
         }
         case 0xC3: // memset
         {
-            /* ebx - void *ptr;
-               ecx - int value;
-               edx - size_t num; */
+            /* rbx - void *ptr;
+               rcx - int value;
+               rdx - size_t num; */
             uint8_t *ptr;
-            calc_mem(ptr, EBX);
-            memset(ptr, ECX, EDX);
+            calc_mem(ptr, RBX);
+            memset(ptr, RCX, RDX);
             break;
         }
         case 0xC4: // rand
         {
-            /* ebx - int rand_max (UINT32_MAX if 0); */
-            EAX = rand() % (EBX ? EBX : UINT32_MAX);
+            /* rbx - int rand_max (UINT64_MAX if 0); */
+            RAX = rand() % (RBX ? RBX : UINT64_MAX);
             break;
         }
         case 0xC5: // sig_attach
         {
-            /* ebx - int sig_id;
-               ecx - void *ptr; */
+            /* rbx - int sig_id;
+               rcx - void *ptr; */
             code_sigh *cs = malloc(sizeof(code_sigh));
             cs->pid = caller->pid;
-            cs->offset = ECX;
-            sig_attach(EBX, code_sighandler, cs);
+            cs->offset = RCX;
+            sig_attach(RBX, code_sighandler, cs);
         }
     }
 }
 
 int code_exec(struct CODE *p)
 {
-    uint32_t *regs = p->regs;
+    uint64_t *regs = p->regs;
     uint8_t *pc = p->pc, *text = p->text, cmd;
     int pid = p->pid;
     for(;;)
@@ -224,8 +224,8 @@ int code_exec(struct CODE *p)
         {
             case 0x01:  // DBG
             {
-                fprintf(stderr, "EAX=%d EBX=%d ECX=%d EDX=%d ESI=%d EDI=%d; ", EAX, EBX, ECX, EDX, ESI, EDI);
-                fprintf(stderr, "CF=%d PF=%d ZF=%d SF=%d OF=%d\n", bget(CF), bget(PF), bget(ZF), bget(SF), bget(OF));
+                regs_out();
+                flags_out();
                 break;
             }
             case 0x02:  // MOV REG REG
@@ -244,7 +244,7 @@ int code_exec(struct CODE *p)
             case 0x04:  // MOV REG MEM
             {
                 int mem, size, base, reg = get();
-                uint32_t rel_addr = 0;
+                uint64_t rel_addr = 0;
                 uint8_t *addr;
                 get_mem_ptr();
                 memcpy(get_reg_ptr(reg), addr, size);
@@ -253,7 +253,7 @@ int code_exec(struct CODE *p)
             case 0x05:  // MOV MEM REG
             {
                 int reg, mem, base, size;
-                uint32_t rel_addr = 0;
+                uint64_t rel_addr = 0;
                 uint8_t *addr;
                 get_mem_ptr();
                 reg = get();
@@ -263,7 +263,7 @@ int code_exec(struct CODE *p)
             case 0x06:  // MOV MEM CONST
             {
                 int mem, size, base;
-                uint32_t rel_addr = 0;
+                uint64_t rel_addr = 0;
                 uint8_t *addr;
                 get_mem_ptr();
                 skip(1);
@@ -274,7 +274,7 @@ int code_exec(struct CODE *p)
             case 0x07:  // MOV MEM MEM
             {
                 int mem, size, base;
-                uint32_t rel_addr = 0;
+                uint64_t rel_addr = 0;
                 uint8_t *addr, *dest;
                 get_mem_ptr();
                 dest = addr; rel_addr = 0;
@@ -292,7 +292,7 @@ int code_exec(struct CODE *p)
             case 0x09:  // XCHG REG MEM
             {
                 int mem, size, base, reg = get();
-                uint32_t rel_addr = 0, *pt = get_reg_ptr(reg), z = *pt; // z <- x
+                uint64_t rel_addr = 0, *pt = get_reg_ptr(reg), z = *pt; // z <- x
                 uint8_t *addr;
                 get_mem_ptr();
                 memcpy(pt, addr, size); // x <- y
@@ -302,7 +302,7 @@ int code_exec(struct CODE *p)
             case 0x0A:   // XCHG MEM MEM
             {
                 int mem, size, base;
-                uint32_t rel_addr = 0, z = 0;
+                uint64_t rel_addr = 0, z = 0;
                 uint8_t *addr, *dest;
                 get_mem_ptr(); // read X
                 dest = addr;
@@ -315,26 +315,26 @@ int code_exec(struct CODE *p)
             case 0x0B:  // PUSHA
             {
                 int i;
-                uint32_t saved = ESP;
+                uint64_t saved = RSP;
                 for(i = 0; i < 8; i++)
                     if(i == 4)
                     {
-                        push(&saved, 4);
+                        push(&saved, 8);
                     } else {
-                        push(&regs[pusha_order[i]], 4);
+                        push(&regs[pusha_order[i]], 8);
                     }
                 break;
             }
             case 0x0C:  // POPA
             {
                 int i;
-                uint32_t stub;
+                uint64_t stub;
                 for(i = 7; i >=0; i--)
                     if(i == 4)
                     {
-                        pop(&stub, 4);
+                        pop(&stub, 8);
                     } else {
-                        pop(&regs[pusha_order[i]], 4);
+                        pop(&regs[pusha_order[i]], 8);
                     }
                 break;
             }
@@ -354,7 +354,7 @@ int code_exec(struct CODE *p)
             case 0x0F:  // PUSH MEM
             {
                 int mem, size, base;
-                uint32_t rel_addr = 0;
+                uint64_t rel_addr = 0;
                 uint8_t *addr;
                 get_mem_ptr();
                 push(addr, size);
@@ -369,7 +369,7 @@ int code_exec(struct CODE *p)
             case 0x11:  // POP MEM
             {
                 int mem, size, base;
-                uint32_t rel_addr = 0;
+                uint64_t rel_addr = 0;
                 uint8_t *addr;
                 get_mem_ptr();
                 pop(addr, size);
@@ -399,7 +399,7 @@ int code_exec(struct CODE *p)
             case 0x14:  // JMP MEM
             {
                 int mem, size, base;
-                uint32_t rel_addr;
+                uint64_t rel_addr;
                 uint8_t *addr;
             jmp_mem:
                 rel_addr = 0;
@@ -431,7 +431,7 @@ int code_exec(struct CODE *p)
             case 0x18:  // INT MEM
             {
                 int mem, size, base;
-                uint32_t rel_addr = 0, buf = 0;
+                uint64_t rel_addr = 0, buf = 0;
                 uint8_t *addr;
                 get_mem_ptr();
                 memcpy(&buf, addr, size);
@@ -442,8 +442,7 @@ int code_exec(struct CODE *p)
             case 0x1B:  // DEC REG
             {
                 int reg = get(), size = reg_size[reg], power, tmp;
-                uint32_t buf = 0, *ptr = get_reg_ptr(reg);
-                uint64_t sign;
+                uint64_t buf = 0, *ptr = get_reg_ptr(reg), sign;
                 bclear(PF|ZF|SF|OF);
                 power = size*8-1;
                 memcpy(&buf, ptr, size);
@@ -461,9 +460,8 @@ int code_exec(struct CODE *p)
             case 0x1C:  // DEC MEM
             {
                 int mem, size, base, power, tmp;
-                uint32_t rel_addr = 0, buf = 0;
+                uint64_t rel_addr = 0, buf = 0, sign;
                 uint8_t *addr;
-                uint64_t sign;
                 bclear(PF|ZF|SF|OF);
                 get_mem_ptr();
                 power = size*8-1;
@@ -490,8 +488,7 @@ int code_exec(struct CODE *p)
             case 0x26:  // SHR REG REG
             {
                 int x, y, tmp, power, size;
-                uint32_t *ptr, val;
-                uint64_t sign, buf;
+                uint64_t *ptr, val, sign, buf;
             reg_reg:
                 x = get(); y = get(); size = reg_size[x]; power = size*8-1;
                 ptr = get_reg_ptr(x); buf = *ptr; val = get_reg(y);
@@ -510,13 +507,20 @@ int code_exec(struct CODE *p)
                     case 0x25:  buf <<= val; break;
                     case 0x26:  buf >>= val; break;
                 }
+                if(cmd == 0x1D) {
+                    int a = *ptr>>power, b = val>>power, c = buf>>power;
+                    if(a&&b || a&&!c || b&&!c) bset(CF);
+                } else if(cmd == 0x1E) {
+                    if(*ptr < val) bset(CF);
+                } else if(cmd == 0x20 && val) {
+                    if(*ptr > UINT64_MAX / val) bset(CF);
+                }
                 if(!p->cmp_flag) memcpy(ptr, &buf, size);
                 tmp = buf & 0xFF;
-                if(1LL<<(power+1)&buf) bset(CF);
                 try_PF(tmp);
                 if(!buf) bset(ZF);
                 if(1LL<<power&buf) bset(SF);
-                if(((bget(SF) ^ sign)>>7) ^ bget(CF)) bset(OF);
+                if((bget(SF)>>7 ^ sign>>power) ^ bget(CF)) bset(OF);
                 p->cmp_flag = FALSE;
                 break;
             }
@@ -532,8 +536,7 @@ int code_exec(struct CODE *p)
             case 0x30:  // SHR REG CONST
             {
                 int reg, size, power, tmp;
-                uint32_t val, *ptr, prev;
-                uint64_t sign, buf;
+                uint64_t val, *ptr, prev, sign, buf;
             reg_const:
                 reg = get(); size = get();
                 power = reg_size[reg]*8-1;
@@ -555,13 +558,20 @@ int code_exec(struct CODE *p)
                     case 0x2F:  buf <<= val; break;
                     case 0x30:  buf >>= val; break;
                 }
+                if(cmd == 0x27) {
+                    int a = *ptr>>power, b = val>>power, c = buf>>power;
+                    if(a&&b || a&&!c || b&&!c) bset(CF);
+                } else if(cmd == 0x28) {
+                    if(*ptr < val) bset(CF);
+                } else if(cmd == 0x2A && val) {
+                    if(*ptr > UINT64_MAX / val) bset(CF);
+                }
                 if(!p->cmp_flag) memcpy(ptr, &buf, size);
                 tmp = buf & 0xFF;
-                if(1LL<<(power+1)&buf) bset(CF);
                 try_PF(tmp);
                 if(!buf) bset(ZF);
                 if(1LL<<power&buf) bset(SF);
-                if(((bget(SF) ^ sign)>>7) ^ bget(CF)) bset(OF);
+                if((bget(SF)>>7 ^ sign>>power) ^ bget(CF)) bset(OF);
                 p->cmp_flag = FALSE;
                 break;
             }
@@ -578,8 +588,7 @@ int code_exec(struct CODE *p)
             {
                 int reg, mem, size, base, power, tmp;
                 uint8_t *addr;
-                uint32_t rel_addr, val, *ptr, prev;
-                uint64_t sign, buf;
+                uint64_t rel_addr, val, *ptr, prev, sign, buf;
             reg_mem:
                 reg = get(); power = reg_size[reg]*8-1;
                 rel_addr = 0; val = 0; ptr = get_reg_ptr(reg); buf = *ptr;
@@ -600,13 +609,20 @@ int code_exec(struct CODE *p)
                     case 0x39:  buf <<= val; break;
                     case 0x3A:  buf >>= val; break;
                 }
+                if(cmd == 0x31) {
+                    int a = *ptr>>power, b = val>>power, c = buf>>power;
+                    if(a&&b || a&&!c || b&&!c) bset(CF);
+                } else if(cmd == 0x32) {
+                    if(*ptr < val) bset(CF);
+                } else if(cmd == 0x34 && val) {
+                    if(*ptr > UINT64_MAX / val) bset(CF);
+                }
                 if(!p->cmp_flag) memcpy(ptr, &buf, size);
                 tmp = buf & 0xFF;
-                if(1LL<<(power+1)&buf) bset(CF);
                 try_PF(tmp);
                 if(!buf) bset(ZF);
                 if(1LL<<power&buf) bset(SF);
-                if(((bget(SF) ^ sign)>>7) ^ bget(CF)) bset(OF);
+                if((bget(SF)>>7 ^ sign>>power) ^ bget(CF)) bset(OF);
                 p->cmp_flag = FALSE;
                 break;
             }
@@ -623,8 +639,7 @@ int code_exec(struct CODE *p)
             {
                 int reg, mem, size, base, tmp, power;
                 uint8_t *addr;
-                uint32_t rel_addr, prev, val;
-                uint64_t sign, buf;
+                uint64_t rel_addr, prev, val, sign, buf, _buf;
              mem_reg:
                 rel_addr = 0; buf = 0;
                 bclear(CF|PF|ZF|SF|OF);
@@ -633,6 +648,7 @@ int code_exec(struct CODE *p)
                 reg = get();
                 val = get_reg(reg);
                 memcpy(&buf, addr, size);
+                _buf = buf;
                 sign = (1LL<<power&buf) ^ (1LL<<power&val);
                 switch(cmd)
                 {
@@ -647,13 +663,20 @@ int code_exec(struct CODE *p)
                     case 0x43:  buf <<= val; break;
                     case 0x44:  buf >>= val; break;
                 }
+                if(cmd == 0x3B) {
+                    int a = _buf>>power, b = val>>power, c = buf>>power;
+                    if(a&&b || a&&!c || b&&!c) bset(CF);
+                } else if(cmd == 0x3C) {
+                    if(_buf < val) bset(CF);
+                } else if(cmd == 0x3E && val) {
+                    if(_buf > UINT64_MAX / val) bset(CF);
+                }
                 if(!p->cmp_flag) memcpy(addr, &buf, size);
                 tmp = buf & 0xFF;
-                if(1LL<<(power+1)&buf) bset(CF);
                 try_PF(tmp);
                 if(!buf) bset(ZF);
                 if(1LL<<power&buf) bset(SF);
-                if(((bget(SF) ^ sign)>>7) ^ bget(CF)) bset(OF);
+                if((bget(SF)>>7 ^ sign>>power) ^ bget(CF)) bset(OF);
                 p->cmp_flag = FALSE;
                 break;
             }
@@ -670,14 +693,14 @@ int code_exec(struct CODE *p)
             {
                 int mem, size, base, const_size, power, tmp;
                 uint8_t *addr;
-                uint32_t rel_addr, const_buf;
-                uint64_t sign, mem_buf;
+                uint64_t rel_addr, const_buf, sign, mem_buf, _mem_buf;
             mem_const:
                 rel_addr = 0; mem_buf = 0; const_buf = 0;
                 bclear(CF|PF|ZF|SF|OF);
                 get_mem_ptr();
                 power = size*8-1;
                 memcpy(&mem_buf, addr, size);
+                _mem_buf = mem_buf;
                 const_size = get();
                 memcpy(&const_buf, pc, const_size);
                 sign = (1LL<<power&mem_buf) ^ (1LL<<(const_size*8-1)&const_buf);
@@ -694,14 +717,21 @@ int code_exec(struct CODE *p)
                     case 0x4D:  mem_buf <<= const_buf; break;
                     case 0x4E:  mem_buf >>= const_buf; break;
                 }
+                if(cmd == 0x45) {
+                    int a = _mem_buf>>power, b = const_buf>>power, c = mem_buf>>power;
+                    if(a&&b || a&&!c || b&&!c) bset(CF);
+                } else if(cmd == 0x46) {
+                    if(_mem_buf < const_buf) bset(CF);
+                } else if(cmd == 0x48 && const_buf) {
+                    if(_mem_buf > UINT64_MAX / const_buf) bset(CF);
+                }
                 if(!p->cmp_flag) memcpy(addr, &mem_buf, size);
                 skip(const_size);
                 tmp = mem_buf & 0xFF;
-                if(1LL<<(power+1)&mem_buf) bset(CF);
                 try_PF(tmp);
                 if(!mem_buf) bset(ZF);
                 if(1LL<<power&mem_buf) bset(SF);
-                if(((bget(SF) ^ sign)>>7) ^ bget(CF)) bset(OF);
+                if((bget(SF)>>7 ^ sign>>power) ^ bget(CF)) bset(OF);
                 p->cmp_flag = FALSE;
                 break;
             }
@@ -718,14 +748,14 @@ int code_exec(struct CODE *p)
             {
                 int mem, size, base, power, tmp;
                 uint8_t *addr, *dest;
-                uint32_t rel_addr, src_buf;
-                uint64_t sign, dest_buf;
+                uint64_t rel_addr, src_buf, sign, dest_buf, _dest_buf;
             mem_mem:
                 bclear(CF|PF|ZF|SF|OF);
                 rel_addr = 0; dest_buf = 0; src_buf = 0;
                 get_mem_ptr();
                 power = size*8-1;
                 memcpy(&dest_buf, addr, size);
+                _dest_buf = dest_buf;
                 dest = addr; rel_addr = 0;
                 get_mem_ptr();
                 memcpy(&src_buf, addr, size);
@@ -743,19 +773,26 @@ int code_exec(struct CODE *p)
                     case 0x57:  dest_buf <<= src_buf; break;
                     case 0x58:  dest_buf >>= src_buf; break;
                 }
+                if(cmd == 0x4F) {
+                    int a = _dest_buf>>power, b = src_buf>>power, c = dest_buf>>power;
+                    if(a&&b || a&&!c || b&&!c) bset(CF);
+                } else if(cmd == 0x50) {
+                    if(_dest_buf < src_buf) bset(CF);
+                } else if(cmd == 0x52 && src_buf) {
+                    if(_dest_buf > UINT64_MAX / src_buf) bset(CF);
+                }
                 if(!p->cmp_flag) memcpy(dest, &dest_buf, size);
                 tmp = dest_buf & 0xFF;
-                if(1LL<<(power+1)&dest_buf) bset(CF);
                 try_PF(tmp);
                 if(!dest_buf) bset(ZF);
                 if(1LL<<power&dest_buf) bset(SF);
-                if(((bget(SF) ^ sign)>>7) ^ bget(CF)) bset(OF);
+                if((bget(SF)>>7 ^ sign>>power) ^ !!bget(CF)) bset(OF);
                 p->cmp_flag = FALSE;
                 break;
             }
             case 0x59:  // XLAT
             {
-                *((uint8_t*)regs) = *(text+EBX+*((uint8_t*)regs));
+                *((uint8_t*)regs) = *(text+RBX+*((uint8_t*)regs));
                 break;
             }
             case 0x5A:  // CMP REG REG
@@ -831,17 +868,17 @@ int code_exec(struct CODE *p)
                 goto mem_mem;
             }
             case 0x66:  // LOOP REG
-                if(--ECX) goto jmp_reg; else { skip_reg(); break; };
+                if(--RCX) goto jmp_reg; else { skip_reg(); break; };
             case 0x67:  // LOOP CONST
-                if(--ECX) goto jmp_const; else { skip_const(); break; };
+                if(--RCX) goto jmp_const; else { skip_const(); break; };
             case 0x68:  // LOOP MEM
-                if(--ECX) goto jmp_mem; else { skip_mem(); break; };
-            case 0x69:  // JA,JBE REG
-                if(!bget(CF)&&!bget(ZF)) goto jmp_reg; else { skip_reg(); break; };
-            case 0x6A:  // JE,JBE CONST
-                if(!bget(CF)&&!bget(ZF)) goto jmp_const; else { skip_const(); break; };
-            case 0x6B:  // JA,JBE MEM
-                if(!bget(CF)&&!bget(ZF)) goto jmp_mem; else { skip_mem(); break; };
+                if(--RCX) goto jmp_mem; else { skip_mem(); break; };
+            case 0x69:  // JA,JNBE REG
+                if(!bget(CF) && !bget(ZF)) goto jmp_reg; else { skip_reg(); break; };
+            case 0x6A:  // JE,JNBE CONST
+                if(!bget(CF) && !bget(ZF)) goto jmp_const; else { skip_const(); break; };
+            case 0x6B:  // JA,JNBE MEM
+                if(!bget(CF) && !bget(ZF)) goto jmp_mem; else { skip_mem(); break; };
             case 0x6C:  // JAE,JNB,JNC REG
                 if(!bget(CF)) goto jmp_reg; else { skip_reg(); break; };
             case 0x6D:  // JAE,JNB,JNC CONST
@@ -855,11 +892,11 @@ int code_exec(struct CODE *p)
             case 0x71:  // JB,JNAE,JC MEM
                 if(bget(CF)) goto jmp_mem; else { skip_mem(); break; };
             case 0x72:  // JBE,JNA REG
-                if(bget(CF)||bget(ZF)) goto jmp_reg; else { skip_reg(); break; };
+                if(bget(CF) || bget(ZF)) goto jmp_reg; else { skip_reg(); break; };
             case 0x73:  // JBE,JNA CONST
-                if(bget(CF)||bget(ZF)) goto jmp_const; else { skip_const(); break; };
+                if(bget(CF) || bget(ZF)) goto jmp_const; else { skip_const(); break; };
             case 0x74:  // JBE,JNA MEM
-                if(bget(CF)||bget(ZF)) goto jmp_mem; else { skip_mem(); break; };
+                if(bget(CF) || bget(ZF)) goto jmp_mem; else { skip_mem(); break; };
             case 0x75:  // JE,JZ REG
                 if(bget(ZF)) goto jmp_reg; else { skip_reg(); break; };
             case 0x76:  // JE,JZ CONST
@@ -867,29 +904,29 @@ int code_exec(struct CODE *p)
             case 0x77:  // JE,JZ MEM
                 if(bget(ZF)) goto jmp_mem; else { skip_mem(); break; };
             case 0x78:  // JG,JNLE REG
-                if(!bget(ZF)&&((bget(SF)>>7)==(bget(OF)>>11))) goto jmp_reg; else { skip_reg(); break; };
+                if(!bget(ZF) && ((bget(SF)>>7) == (bget(OF)>>11))) goto jmp_reg; else { skip_reg(); break; };
             case 0x79:  // JG,JNLE CONST
-                if(!bget(ZF)&&((bget(SF)>>7)==(bget(OF)>>11))) goto jmp_const; else { skip_const(); break; };
+                if(!bget(ZF) && ((bget(SF)>>7) == (bget(OF)>>11))) goto jmp_const; else { skip_const(); break; };
             case 0x7A:  // JG,JNLE MEM
-                if(!bget(ZF)&&((bget(SF)>>7)==(bget(OF)>>11))) goto jmp_mem; else { skip_mem(); break; };
+                if(!bget(ZF) && ((bget(SF)>>7) == (bget(OF)>>11))) goto jmp_mem; else { skip_mem(); break; };
             case 0x7B:  // JGE,JNL REG
-                if((bget(SF)>>7)==(bget(OF)>>11)) goto jmp_reg; else { skip_reg(); break; };
+                if((bget(SF)>>7) == (bget(OF)>>11)) goto jmp_reg; else { skip_reg(); break; };
             case 0x7C:  // JGE,JNL CONST
-                if((bget(SF)>>7)==(bget(OF)>>11)) goto jmp_const; else { skip_const(); break; };
+                if((bget(SF)>>7) == (bget(OF)>>11)) goto jmp_const; else { skip_const(); break; };
             case 0x7D:  // JGE,JNL MEM
-                if((bget(SF)>>7)==(bget(OF)>>11)) goto jmp_mem; else { skip_mem(); break; };
+                if((bget(SF)>>7) == (bget(OF)>>11)) goto jmp_mem; else { skip_mem(); break; };
             case 0x7E:  // JL,JNGE REG
-                if((bget(SF)>>7)!=(bget(OF)>>11)) goto jmp_reg; else { skip_reg(); break; };
+                if((bget(SF)>>7) != (bget(OF)>>11)) goto jmp_reg; else { skip_reg(); break; };
             case 0x7F:  // JL,JNGE CONST
-                if((bget(SF)>>7)!=(bget(OF)>>11)) goto jmp_const; else { skip_const(); break; };
+                if((bget(SF)>>7) != (bget(OF)>>11)) goto jmp_const; else { skip_const(); break; };
             case 0x80:  // JL,JNGE MEM
-                if((bget(SF)>>7)!=(bget(OF)>>11)) goto jmp_mem; else { skip_mem(); break; };
+                if((bget(SF)>>7) != (bget(OF)>>11)) goto jmp_mem; else { skip_mem(); break; };
             case 0x81:  // JLE,JNG REG
-                if(bget(ZF)||((bget(SF)>>7)!=(bget(OF)>>11))) goto jmp_reg; else { skip_reg(); break; };
+                if(bget(ZF) || ((bget(SF)>>7) != (bget(OF)>>11))) goto jmp_reg; else { skip_reg(); break; };
             case 0x82:  // JLE,JNG CONST
-                if(bget(ZF)||((bget(SF)>>7)!=(bget(OF)>>11))) goto jmp_const; else { skip_const(); break; };
+                if(bget(ZF) || ((bget(SF)>>7) != (bget(OF)>>11))) goto jmp_const; else { skip_const(); break; };
             case 0x83:  // JLE,JNG MEM
-                if(bget(ZF)||((bget(SF)>>7)!=(bget(OF)>>11))) goto jmp_mem; else { skip_mem(); break; };
+                if(bget(ZF) || ((bget(SF)>>7) != (bget(OF)>>11))) goto jmp_mem; else { skip_mem(); break; };
             case 0x84:  // JNE,JNZ REG
                 if(!bget(ZF)) goto jmp_reg; else { skip_reg(); break; };
             case 0x85:  // JNE,JNZ CONST
@@ -935,7 +972,7 @@ int code_exec(struct CODE *p)
             case 0x99:  // LEA REG MEM
             {
                 int reg = get(), mem, size, base;
-                uint32_t rel_addr = 0;
+                uint64_t rel_addr = 0;
                 get_mem();
                 memcpy(get_reg_ptr(reg), &rel_addr, size);
                 break;
@@ -944,8 +981,7 @@ int code_exec(struct CODE *p)
             {
                 int reg = get(), tmp;
                 int size = reg_size[reg]; int power = size*8-1;
-                uint32_t *ptr = get_reg_ptr(reg), buf = 0;
-                uint64_t sign;
+                uint64_t *ptr = get_reg_ptr(reg), buf = 0, sign;
                 bclear(CF|PF|ZF|SF|OF);
                 memcpy(&buf, ptr, size);
                 sign = 1LL<<power&buf;
@@ -962,8 +998,7 @@ int code_exec(struct CODE *p)
             {
                 int mem, size, base, tmp, power;
                 uint8_t *addr;
-                uint32_t rel_addr = 0, buf = 0;
-                uint64_t sign;
+                uint64_t rel_addr = 0, buf = 0, sign;
                 bclear(CF|PF|ZF|SF|OF);
                 get_mem_ptr();
                 memcpy(&buf, addr, size);
@@ -978,22 +1013,22 @@ int code_exec(struct CODE *p)
                 if(((bget(SF) ^ sign)>>7) ^ bget(CF)) bset(OF);
                 break;
             }
-            case 0x9C:  // JCXZ REG
-                if(!(ECX & 0xFFFF)) goto jmp_reg; else { skip_reg(); break; };
-            case 0x9D:  // JCXZ CONST
-                if(!(ECX & 0xFFFF)) goto jmp_const; else { skip_const(); break; };
-            case 0x9E:  // JCXZ MEM
-                if(!(ECX & 0xFFFF)) goto jmp_mem; else { skip_mem(); break; };
-            case 0x9F:  // JECXZ REG
-                if(!ECX) goto jmp_reg; else { skip_reg(); break; };
-            case 0xA0:  // JECXZ CONST
-                if(!ECX) goto jmp_const; else { skip_const(); break; };
-            case 0xA1:  // JECXZ MEM
-                if(!ECX) goto jmp_mem; else { skip_mem(); break; };
+            case 0x9C:  // JECXZ REG
+                if(!(RCX & 0xFFFFFFFF)) goto jmp_reg; else { skip_reg(); break; };
+            case 0x9D:  // JECXZ CONST
+                if(!(RCX & 0xFFFFFFFF)) goto jmp_const; else { skip_const(); break; };
+            case 0x9E:  // JECXZ MEM
+                if(!(RCX & 0xFFFFFFFF)) goto jmp_mem; else { skip_mem(); break; };
+            case 0x9F:  // JRCXZ REG
+                if(!RCX) goto jmp_reg; else { skip_reg(); break; };
+            case 0xA0:  // JRCXZ CONST
+                if(!RCX) goto jmp_const; else { skip_const(); break; };
+            case 0xA1:  // JRCXZ MEM
+                if(!RCX) goto jmp_mem; else { skip_mem(); break; };
             case 0xA2:  // NOT REG
             {
                 int reg = get(), size = reg_size[reg];
-                uint32_t *ptr = get_reg_ptr(reg), buf = 0;
+                uint64_t *ptr = get_reg_ptr(reg), buf = 0;
                 memcpy(&buf, ptr, size);
                 buf = ~buf;
                 memcpy(ptr, &buf, size);
@@ -1003,7 +1038,7 @@ int code_exec(struct CODE *p)
             {
                 int mem, size, base;
                 uint8_t *addr;
-                uint32_t rel_addr = 0, buf = 0;
+                uint64_t rel_addr = 0, buf = 0;
                 get_mem_ptr();
                 memcpy(&buf, addr, size);
                 buf = ~buf;
@@ -1013,16 +1048,16 @@ int code_exec(struct CODE *p)
             case 0xA4:  // CALL REG
             {
                 int reg = get();
-                uint32_t buf = (uint32_t)((pid<<24)+pc-text);
-                int32_t temp = 0;
-                push(&buf, 4);
+                uint64_t buf = ((uint64_t)pid<<56)+pc-text;
+                int64_t temp = 0;
+                push(&buf, 8);
                 memcpy(&temp, get_reg_ptr(reg), reg_size[reg]);
                 if(temp < 0) // external call flag
                 {
-                    pid  = temp>>24&0x7F;
+                    pid  = temp>>56&0x7F;
                     text = search(pid);
                 }
-                pc=text+(temp&0xFFFFFF);
+                pc=text+(temp&0xFFFFFFFFFFFFFFLL);
                 ++p->ret_count;
                 break;
              }
@@ -1030,16 +1065,16 @@ int code_exec(struct CODE *p)
             {
                 int size = get();
                 uint8_t *addr = pc;
-                uint32_t buf = (uint32_t)((pid<<24)+pc-text+size);
-                int32_t temp = 0;
-                push(&buf, 4);
+                uint64_t buf = ((uint64_t)pid<<56)+pc-text+size;
+                int64_t temp = 0;
+                push(&buf, 8);
                 memcpy(&temp, addr, size);
                 if(temp < 0) // external call flag
                 {
-                    pid  = temp>>24&0x7F;
+                    pid  = temp>>56&0x7F;
                     text = search(pid);
                 }
-                pc=text+(temp&0xFFFFFF);
+                pc=text+(temp&0xFFFFFFFFFFFFFFLL);
                 ++p->ret_count;
                 break;
             }
@@ -1047,69 +1082,69 @@ int code_exec(struct CODE *p)
             {
                 int mem, size, base;
                 uint8_t *addr;
-                uint32_t rel_addr = 0, buf;
-                int32_t temp = 0;
+                uint64_t rel_addr = 0, buf;
+                int64_t temp = 0;
                 get_mem_ptr();
-                buf = (uint32_t)((pid<<24)+pc-text);
-                push(&buf, 4);
+                buf = ((uint64_t)pid<<56)+pc-text;
+                push(&buf, 8);
                 memcpy(&temp, addr, size);
                 if(temp < 0) // external call flag
                 {
-                    pid  = temp>>24&0x7F;
+                    pid  = temp>>56&0x7F;
                     text = search(pid);
                 }
-                pc=text+(temp&0xFFFFFF);
+                pc=text+(temp&0xFFFFFFFFFFFFFFLL);
                 ++p->ret_count;
                 break;
             }
             case 0xA7:  // RET
             {
-                uint32_t temp = 0;
+                uint64_t temp = 0;
             ret:
                 if(!p->ret_count--) return TRUE;
-                pop(&temp, 4);
-                pid  = temp>>24;
+                pop(&temp, 8);
+                pid  = temp>>56;
                 text = search(pid);
-                pc=text+(temp&0xFFFFFF);
+                pc=text+(temp&0xFFFFFFFFFFFFFFLL);
                 break;
             }
             case 0xA8:  // RET CONST
             {
                 int size = get();
-                uint32_t buf = 0;
+                uint64_t buf = 0;
                 memcpy(&buf, pc, size);
                 skip(size);
-                ESP += buf;
+                RSP += buf;
                 goto ret;
             }
             case 0xA9:  // ENTER
             {
-                push(&EBP, 4);
-                EBP = ESP;
+                push(&RBP, 8);
+                RBP = RSP;
                 break;
             }
             case 0xAA:  // ENTER CONST [CONST]
             {
                 int size;
-                uint32_t buf = 0;
-                push(&EBP, 4);
-                EBP = ESP;
+                uint64_t buf = 0;
+                push(&RBP, 8);
+                RBP = RSP;
                 size = get();
                 memcpy(&buf, pc, size);
-                ESP -= buf;
+                RSP -= buf;
                 skip(size);
                 break;
             }
             case 0xAB:  // LEAVE
             {
-                ESP = EBP;
-                pop(&EBP, 4);
+                RSP = RBP;
+                pop(&RBP, 8);
                 break;
             }
             case 0xAC:  // LEA MEM MEM
             {
                 int mem, size, base;
-                uint32_t rel_addr = 0;
+                uint64_t rel_addr = 0;
                 uint8_t *addr;
                 get_mem_ptr();
                 rel_addr = 0;
@@ -1156,8 +1191,6 @@ void x86_exit(void *p)
 
 int main(int argc, char **argv)
 {
-    char *app_path;
-
     // set X86_EXIT handler
     sig_attach(X86_EXIT, x86_exit, NULL);
 
@@ -1173,15 +1206,11 @@ int main(int argc, char **argv)
     // load application
     if(argc < 2)
     {
-        app_path = malloc(9);
-        strcpy(app_path, "test.bin");
+        fprintf(stderr, "No application specified\n");
     } else {
-        app_path = malloc(strlen(argv[1])+1);
-        strcpy(app_path, argv[1]);
+        struct CODE *test = code_load(argv[1]);
+        code_exec(test);
     }
-    struct CODE *test = code_load(app_path);
-    free(app_path);
-    code_exec(test);
 
     // raise X86_EXIT
     sig_raise(X86_EXIT, NULL);
