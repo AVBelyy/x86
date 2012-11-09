@@ -5,26 +5,20 @@ newline     db      0xA
 
 
     ;; Greatest Common Divisor
-    ;; int gcd(int a, int b)
+    ;; fastcall int gcd(int a(rax), int b(rbx))
 gcd:        enter
-            mov     rax,[rbp+24]
-            mov     rbx,[rbp+16]
-            mod     rbx,rax
-            jz      .return
-            push    rbx
-            push    rax
-            call    gcd
-            add     rsp,8
-.return:    leave
+.loop:      mod     rax,rbx
+            xchg    rax,rbx
+            jnz     .loop
+            leave
             ret
 
 
 _start:     
     ;; Calculation part
-            push    qword 2**30-1
-            push    qword 2**30
+            mov     eax,2**30-1
+            mov     ebx,2**30
             call    gcd
-            add     rsp,16
     ;; Output part
             push    qword 10
             push    ^itoa_buf
