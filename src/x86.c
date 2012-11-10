@@ -1065,7 +1065,7 @@ int code_exec(struct CODE *p)
             {
                 int size = get();
                 uint8_t *addr = pc;
-                uint64_t buf = ((uint64_t)pid<<56)+pc-text+size;
+                uint64_t buf = ((uint64_t)pid<<56)|(pc-text+size);
                 int64_t temp = 0;
                 push(&buf, 8);
                 memcpy(&temp, addr, size);
