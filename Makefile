@@ -4,7 +4,7 @@ CFLAGS=-O2 -w
 TARGET=x86
 SRC=src/$(TARGET).c src/lib/core/*.c
 OUT=$(TARGET)
-APPS=libs/libc.asm examples/*.asm
+APPS=lib/libc.asm examples/*.asm
 
 AVR_MCU=at90usb1286
 AVR_CFLAGS=$(CFLAGS) -mmcu=$(AVR_MCU) -D_AVR -D__AVR_`echo $(AVR_MCU) | tr 'a-z' 'A-Z'`__ -DF_CPU=16000000 -DUSB_SERIAL \
