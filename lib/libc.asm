@@ -1,4 +1,4 @@
-;  (C) Anton Belyy, 2011, 2012
+;  (C) Anton Belyy, 2011, 2012, 2013
 ;  quicksort implementation by Chuck Liang, Anton Belyy
 
 section .header
@@ -7,6 +7,7 @@ section .header
 section .text
 
 itoa_table  db      "0123456789ABCDEF"
+
 
     ;;  Copies string from src to dst
     ;;  char *strcpy(char *dst, const char *src)
@@ -85,7 +86,7 @@ itoa_table  db      "0123456789ABCDEF"
             ret
 
 
-quickaux:   enter
+_quickaux:  enter
             pusha
             mov     rdx,[rbp+16]    ;  save start of partition in rdx
             mov     rdi,[rbp+24]    ;  and end of partition in rdi
@@ -123,13 +124,13 @@ quickaux:   enter
             sub     rbx,8
             push    rbx             ;  end of first paritition
             push    rdx             ;  start of first partition
-            call    quickaux
+            call    _quickaux
             add     rsp,16          ;  deallocate params
     ;;  second partition:
             push    rdi             ;  end of second partition
             add     rbx,8
             push    rbx             ;  start of second partition
-            call    quickaux
+            call    _quickaux
             add     rsp,16
 .qretrn:    popa
             leave
@@ -148,7 +149,7 @@ quickaux:   enter
             lea     rcx,[8*rcx+rbx] ;  start addr of partition
             push    rax             ;  quickaux expects start and end 
             push    rcx             ;  addresses of partition as arguments.
-            call    quickaux
+            call    _quickaux
             add     rsp,16
             popa
             leave
