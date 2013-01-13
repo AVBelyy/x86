@@ -155,4 +155,63 @@ _quickaux:  enter
             leave
             ret
 
+
+    ;;  writes a character to the stream
+    ;;  returns 1 on success, otherwise 0
+    ;;  int fputc(char character, fd stream)
+@fputc:     enter
+            pusha
+            mov     rax,4
+            mov     rbx,[rbp+17]
+            lea     rcx,[rbp+16]
+            mov     rdx,1
+            int     0x32
+            popa
+            leave
+            ret
+
+
+    ;;  writes a character to the standart output
+    ;;  returns 1 on success, otherwise 0
+    ;;  int putc(char character)
+@putc:      enter
+            pusha
+            mov     rax,4
+            mov     rbx,1
+            lea     rcx,[rbp+16]
+            mov     rdx,rbx
+            int     0x32
+            popa
+            leave
+            ret
+
+
+    ;;  writes formatted data to any place
+    ;;  int _uprintf(void (*callback)(char character, void *additional), void *additional, void *garbage, char *format, ...)
+_uprintf:   enter
+            pusha
+            mov     rax,[rbp+16]
+            mov     rbx,[rbp+24]
+            mov     rcx,[rbp+40]
+.loop:      cmp     byte [rcx],'\0'
+            je      .finally
+            push    rbx
+            push    byte [rcx]
+            call    rax
+            add     rsp,9
+            inc     rcx
+            jmp     .loop
+.finally:   popa
+            leave
+            ret
+
+    ;;  prints formatted data to the standart output
+    ;;  int printf(char *format, ...)
+@printf:    push    qword 0 
+            push    qword putc
+            call    _uprintf
+            add     rsp,16
+            ret
+
+
 _start:     ret
