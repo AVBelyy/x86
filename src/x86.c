@@ -1048,7 +1048,7 @@ int code_exec(struct CODE *p)
             case 0xA4:  // CALL REG
             {
                 int reg = get();
-                uint64_t buf = ((uint64_t)pid<<56)+pc-text;
+                uint64_t buf = ((uint64_t)pid<<56)|(pc-text);
                 int64_t temp = 0;
                 push(&buf, 8);
                 memcpy(&temp, get_reg_ptr(reg), reg_size[reg]);
@@ -1085,7 +1085,7 @@ int code_exec(struct CODE *p)
                 uint64_t rel_addr = 0, buf;
                 int64_t temp = 0;
                 get_mem_ptr();
-                buf = ((uint64_t)pid<<56)+pc-text;
+                buf = ((uint64_t)pid<<56)|(pc-text);
                 push(&buf, 8);
                 memcpy(&temp, addr, size);
                 if(temp < 0) // external call flag
