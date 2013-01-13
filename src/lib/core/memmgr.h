@@ -10,7 +10,7 @@ struct MEMMGR_STACK
     struct MEMMGR_STACK *next;
 };
 
-uint32_t memmgr_alloc(uint64_t);
+uint64_t memmgr_alloc(uint64_t);
 int memmgr_free(uint64_t);
 
 #endif

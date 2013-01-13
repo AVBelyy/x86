@@ -4,7 +4,7 @@ struct STACK *heap;
 struct CODE  *p;
 struct MEMMGR_STACK *mmgr_heap = NULL;
 
-uint32_t memmgr_alloc(uint64_t length)
+uint64_t memmgr_alloc(uint64_t length)
 {
     int flag = FALSE;
     uint64_t alloc_ptr = 0;
