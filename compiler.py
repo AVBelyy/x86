@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os, re
+import os, re, operator
 from math import log
 from optparse import OptionParser
 
@@ -474,19 +474,19 @@ class Parser:
         pr_list.sort( reverse=True )
         return out, [x[1] for x in pr_list]
 
-    def calculate( self, expr,skip_regs=False ):
+    def calculate( self, expr, skip_regs=False ):
         action = {
-            "**"    :    lambda x, y: x**y,
-            "*"     :    lambda x, y: x*y,
-            "/"     :    lambda x, y: x/y,
-            "%"     :    lambda x, y: x%y,
-            "+"     :    lambda x, y: x+y,
-            "-"     :    lambda x, y: x-y,
-            "<<"    :    lambda x, y: x<<y,
-            ">>"    :    lambda x, y: x>>y,
-            "&"     :    lambda x, y: x&y,
-            "^"     :    lambda x, y: x^y,
-            "|"     :    lambda x, y: x|y,
+            "**"    :    operator.pow,
+            "*"     :    operator.mul,
+            "/"     :    operator.div,
+            "%"     :    operator.mod,
+            "+"     :    operator.add,
+            "-"     :    operator.sub,
+            "<<"    :    operator.lshift,
+            ">>"    :    operator.rshift,
+            "&"     :    operator.and_,
+            "^"     :    operator.xor,
+            "|"     :    operator.or_,
         }
         tokens, priority = self.tokenize( expr, skip_regs )
         if isinstance( tokens, Parser.Deferred ): return tokens
