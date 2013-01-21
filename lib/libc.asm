@@ -6,7 +6,7 @@ section .header
 
 section .text
 
-itoa_table  db      "0123456789ABCDEF"
+itoa_table  db      "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
     ;;  Copies string from src to dst
@@ -28,10 +28,9 @@ itoa_table  db      "0123456789ABCDEF"
     ;;  Converts 64-bit integer into string
     ;;  char *itoa(int value, char *str, int base)
 @itoa:      enter
-            push    rdi
+            pusha
             mov     rdi,[rbp+32]
             mov     rax,[rbp+24]
-            push    rax
             mov     rcx,[rbp+16]
             test    rcx,1<<63
             jz      .init
@@ -51,9 +50,9 @@ itoa_table  db      "0123456789ABCDEF"
             mov     [rax],[itoa_table+rdx]
             test    rcx,rcx
             jnz     .loop
-            pop     rax
+            popa
+            mov     rax,[rbp+24]
             sub     rbx,rax
-            pop     rdi
             leave
             ret
 
