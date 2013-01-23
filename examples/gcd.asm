@@ -1,6 +1,6 @@
 include "libc.obj"
 
-^itoa_buf   dq      0,0,0
+@itoa_buf   dq      0,0
 newline     db      0xA
 
 
@@ -16,23 +16,19 @@ gcd:        enter
 
 _start:     
     ;; Calculation part
-            mov     eax,2**30-1
-            mov     ebx,2**30
+            mov     eax,12345678
+            mov     ebx,87654321
             call    gcd
     ;; Output part
             push    qword 10
-            push    ^itoa_buf
+            push    @itoa_buf
             push    rax
             call    itoa
             add     rsp,24
-            mov     rcx,rax
-            mov     rdx,rbx
-            mov     rax,4
-            mov     rbx,1
-            int     0x32
-            mov     rax,4
-            mov     rbx,1
-            mov     rcx,newline
-            mov     rdx,1
-            int     0x32
+            push    rax
+            call    printf
+            add     rsp,8
+            push    byte '\n'
+            call    putc
+            inc     rsp
             ret

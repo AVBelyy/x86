@@ -1,16 +1,16 @@
 ;  (C) Anton Belyy, 2011, 2012, 2013
 ;  quicksort implementation by Chuck Liang, Anton Belyy
 
-section .header
+section header
     pid = 0x05
 
-section .text
+section text
 
 itoa_table  db      "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
     ;;  Copies string from src to dst
-    ;;  char *strcpy(char *dst, const char *src)
+    ;;  char *strcpy(char *dst, char *src)
 @strcpy:    enter
             mov     rcx,[rbp+16]
             mov     rdx,[rbp+24]
@@ -28,9 +28,10 @@ itoa_table  db      "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     ;;  Converts 64-bit integer into string
     ;;  char *itoa(int value, char *str, int base)
 @itoa:      enter
-            pusha
+            push    rdi
             mov     rdi,[rbp+32]
             mov     rax,[rbp+24]
+            push    rax
             mov     rcx,[rbp+16]
             test    rcx,1<<63
             jz      .init
@@ -50,37 +51,49 @@ itoa_table  db      "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
             mov     [rax],[itoa_table+rdx]
             test    rcx,rcx
             jnz     .loop
-            popa
-            mov     rax,[rbp+24]
+            pop     rax
+            pop     rdi
             sub     rbx,rax
             leave
             ret
 
 
     ;;  Searches the sorted array
-    ;;  int bsearch(int key, int array[], int size)
+    ;;  void *bsearch(void *key, void *base, int num, int size, int (*compar)(void*, void*))
 @bsearch:   enter
-            push    rsi
+            push    rdi
             mov     rcx,0
             mov     rdx,[rbp+32]
             dec     rdx
-            mov     rsi,[rbp+24]
 .loop:      cmp     rcx,rdx
             jg      .failure
-            lea     rax,[rcx+rdx]
-            shr     rax,1
-            cmp     qword [rbp+16],qword [rax*8+rsi]
+            lea     rdi,[rcx+rdx]
+            shr     rdi,1
+            mov     rax,rdi
+            mul     rax,[rbp+40]
+            add     rax,[rbp+24]
+            pusha
+            push    rax
+            push    qword [rbp+16]
+            call    qword [rbp+48]
             jl      .smaller
             jg      .larger
             jmp     .success
-.smaller:   mov     rdx,rax
+.smaller:   add     rsp,16
+            popa
+            mov     rdx,rdi
             dec     rdx
             jmp     .loop
-.larger:    mov     rcx,rax
+.larger:    add     rsp,16
+            popa
+            mov     rcx,rdi
             inc     rcx
             jmp     .loop
-.failure:   mov     rax,qword -1
-.success:   pop     rsi
+.failure:   mov     rax,0
+            jmp     .exit
+.success:   add     rsp,16
+            popa
+.exit:      pop     rdi
             leave
             ret
 
@@ -134,6 +147,7 @@ _quickaux:  enter
 .qretrn:    popa
             leave
             ret
+
 
     ;;  the qsort procedure is just a wrapper around quickaux,
     ;;  for ease of integration into high level language.
@@ -203,6 +217,7 @@ _uprintf:   enter
 .finally:   popa
             leave
             ret
+
 
     ;;  prints formatted data to the standart output
     ;;  int printf(char *format, ...)

@@ -328,7 +328,7 @@ class Parser:
     # regexp
     t_int           =    r"(?i)(?:[-~]?(?:0x[\dabcdef]+|[\dabcdef]+h|[01]+b|\d+))"
     t_string        =    r"\'.*?\'|\".*?\""
-    t_name          =    r"[_a-zA-Z\$\.@\^][\w\.@:]*"
+    t_name          =    r"[_a-zA-Z\$\.@][\w\.@:]*"
     t_operator      =    r"<<|>>|\+|-|\*\*|\*|/|%|\||&|\^"
     t_operand       =    r"|".join( ( t_name, t_string, t_int ) )
     t_term          =    r"(\(\s*)*(?:(\~|\-)\s*)?(%s)(\s*\))*" % t_operand
@@ -352,7 +352,7 @@ class Parser:
     t_open_match    =    r"(?i)%s\s+(?:macro|struc|proc)(?:\s+(?:%s)\s*(?:,\s*(?:%s)\s*)*\s*(?:%s)?)?" % ( t_name, t_name, t_name, t_comment )
     t_close         =    r"(?:(%s)\s+)?(endm|ends|endp)\s*(?:%s)?" % ( t_name, t_comment ) 
     t_jmp_stub      =    r"near|short|far"
-    t_section       =    r"(?i)section\s+\.(%s)\s*(?:%s)?" % ( t_name, t_comment )
+    t_section       =    r"(?i)section\s+(%s)\s*(?:%s)?" % ( t_name, t_comment )
     t_label         =    r"(%s)\s*:\s*(.*)\s*(?:%s)?" % ( t_name, t_comment )
     t_assign        =    r"(?i)(%s)\s*\=\s*(%s)\s*(?:%s)?" % ( t_name, t_expr_match, t_comment )
     t_equ           =    r"(?i)(%s)\s*equ\s*(.*)\s*(?:%s)?" % ( t_name, t_comment )
@@ -755,8 +755,12 @@ class Parser:
                 local, export = l_name.split("@")
                 if not export:
                     raise _.NameError, (self, "invalid exportable label format")
-                self.sections["export"][self.constants["$"]] = export
+                addr = str( int( self.constants["$"] )+_.QWORD )
+                self.sections["export"][str( addr )] = export
                 l_name = local or export
+                self.sconstants["@"+l_name] = "qword[%s-%d]" % (l_name, _.QWORD)
+                self.sections["shared"].append( str( int( addr )-1 ) )
+                self.push( self.pack( addr, 7 )+[0] )
             if l_name[0] == ".":
                 l_name = self.last_label + l_name
             else:
@@ -817,10 +821,10 @@ class Parser:
                     parsed += map( ord, self.get_string( x ) )
                 else:
                     parsed.append( self.calculate( x ) )
-            if name.startswith("^"):
+            if name.startswith("@"):
                 name = name[1:]
                 addr = str( int( addr )+_.QWORD )
-                self.sconstants["^"+name] = "qword[%s-%d]" % (name, _.QWORD)
+                self.sconstants["@"+name] = "qword[%s-%d]" % (name, _.QWORD)
                 self.sections["shared"].append( str( int( addr )-1 ) )
                 self.push( self.pack( addr, 7 )+[0] )
             for x in parsed:
@@ -924,10 +928,10 @@ class Parser:
                     for key, value in struct[0].items():
                         self.sconstants["%s.%s" % (name, key)] = "[%s+%s]" % (reg, value)
                 else:
-                    if name.startswith("^"):
+                    if name.startswith("@"):
                         name = name[1:]
                         addr = str( int( addr )+_.QWORD )
-                        self.sconstants["^"+name] = "qword[%s-%d]" % (name, _.QWORD)
+                        self.sconstants["@"+name] = "qword[%s-%d]" % (name, _.QWORD)
                         self.sections["shared"].append( str( int( addr )-1 ) )
                         self.push( self.pack( addr, 7 )+[0] )
                     for key, value in struct[0].items():

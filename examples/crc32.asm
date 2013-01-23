@@ -1,5 +1,3 @@
-; (C) Anton Belyy, 2011, 2012
-
 include     "libc.obj"
 
 Crc32Table  dd      0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA
@@ -67,12 +65,12 @@ Crc32Table  dd      0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA
             dd      0xB3667A2E, 0xC4614AB8, 0x5D681B02, 0x2A6F2B94
             dd      0xB40BBE37, 0xC30C8EA1, 0x5A05DF1B, 0x2D02EF8D
 
-^itoa_buf   dd      0, 0
-source_msg  db      "Source: "
-crc32_msg   db      0xA, "CRC-32: 0x"
+@itoa_buf   dd      0, 0
+@source_msg db      "Source: ", 0
+@crc32_msg  db      0xA, "CRC-32: 0x", 0
 
-test_string db      "Hello world. Wanna check my CRC-32?"
-test_strlen =       $-test_string
+@test_str   db      "Hello world. Wanna check my CRC-32?"
+test_strlen = $-test_str
 
 
 crc32:      enter
@@ -81,8 +79,7 @@ crc32:      enter
             mov     rbx,[rbp+16]
             mov     rcx,[rbp+24]
             mov     rdx,0
-.loop:
-            ; calculate index at Crc32Table
+.loop:      ; calculate index at Crc32Table
             mov     edx,eax
             xor     dl,byte [rbx]
             and     edx,0xFF
@@ -98,43 +95,32 @@ crc32:      enter
 
 
 _start:     ; print source_msg
-            mov     rax,4
-            mov     rbx,1
-            mov     rcx,source_msg
-            mov     rdx,8
-            int     0x32
+            push    @source_msg
+            call    printf
+            add     rsp,8
             ; print test_string
-            mov     rax,4
-            mov     rbx,1
-            mov     rcx,test_string
-            mov     rdx,test_strlen
-            int     0x32
+            push    @test_str
+            call    printf
+            add     rsp,8
             ; print crc32_msg
-            mov     rax,4
-            mov     rbx,1
-            mov     rcx,crc32_msg
-            mov     rdx,11
-            int     0x32
+            push    @crc32_msg
+            call    printf
+            add     rsp,8
             ; calculate CRC-32
             push    qword test_strlen
-            push    qword test_string
+            push    qword test_str
             call    crc32
             add     rsp,24
             ; convert and print CRC-32
             push    qword 16
-            push    ^itoa_buf
+            push    @itoa_buf
             push    rax
             call    itoa
             add     rsp,24
-            mov     rcx,rax
-            mov     rdx,rbx
-            mov     rax,4
-            mov     rbx,1
-            int     0x32
-            ; print '\n' (first byte of crc32_msg) and exit program
-            mov     rax,4
-            mov     rbx,1
-            mov     rcx,crc32_msg
-            mov     rdx,1
-            int     0x32
+            push    rax
+            call    printf
+            add     rsp,8
+            push    byte '\n'
+            call    putc
+            inc     rsp
             ret
