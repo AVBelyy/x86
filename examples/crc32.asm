@@ -70,7 +70,8 @@ Crc32Table  dd      0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA
 @crc32_msg  db      0xA, "CRC-32: 0x", 0
 
 @test_str   db      "Hello world. Wanna check my CRC-32?"
-test_strlen = $-test_str
+            db      0
+test_strlen = $-test_str-1
 
 
 crc32:      enter
