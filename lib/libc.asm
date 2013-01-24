@@ -101,15 +101,16 @@ itoa_table  db      "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 _quickaux:  enter
             pusha
             mov     rdx,[rbp+16]    ;  save start of partition in rdx
-            mov     rdi,[rbp+24]    ;  and end of partition in rdi
+            mov     rdi,[rbp+24]    ;  end of partition in rdi
+            mov     rax,[rbp+32]    ;  and cell size in rax
             mov     rbx,rdx
             mov     rcx,rdi
     ;;  find pivot index:
 .ploop:     cmp     rbx,rdi         ;  last cell of partition?
             jae     .qretrn         ;  no pivot, so exit
-            cmp     qword [rbx+8],qword [rbx]
+            cmp     qword [rbx+rax],qword [rbx]
             jl      .pfound         ;  A[i+1]<A[i], pivot found
-            add     rbx,8           ;  next cell
+            lea     rbx,[rbx+rax]   ;  next cell
             jmp     .ploop
 .pfound:
     ;;  at this point, rbx holds mem address of pivot
@@ -117,15 +118,14 @@ _quickaux:  enter
     ;;  use two counters: rbx and rsi. rbx always points to the
     ;;  first cell of second partition (what's >= pivot)
             mov     rcx,[rbx]       ;  save pivot in rcx
-            lea     rsi,[rbx+8]     ;  next cell
+            lea     rsi,[rbx+rax]   ;  next cell
 .tloop:                             ;  partitioning loop
             cmp     rcx,[rsi]       ;  compare pivot against element
-            mov     rax,rsi
             jle     .noswap         ;  no swap if element >=pivot
     ;;  swap [rbx] and [rsi], advance both
             xchg    qword [rbx],qword [rsi]
-            add     rbx,8           ;  next cell must still be >= pivot
-.noswap:    add     rsi,8           ;  goto next cell, preserve rbx
+            lea     rbx,[rbx+rax]   ;  next cell must still be >= pivot
+.noswap:    lea     rsi,[rsi+rax]   ;  goto next cell, preserve rbx
             cmp     rsi,rdi         ;  end of partition?
             jbe     .tloop          ;  next iteration of partition loop
     ;;  at this point, rbx holds start addr of second partition
@@ -133,17 +133,19 @@ _quickaux:  enter
     ;;  make recursive calls to quickaux
 
     ;;  first partition:
-            sub     rbx,8
+            push    rax             ;  size of cell
+            sub     rbx,rax
             push    rbx             ;  end of first paritition
             push    rdx             ;  start of first partition
             call    _quickaux
-            add     rsp,16          ;  deallocate params
+            add     rsp,24          ;  deallocate params
     ;;  second partition:
+            push    rax             ;  size of cell
             push    rdi             ;  end of second partition
-            add     rbx,8
+            lea     rbx,[rbx+rax]
             push    rbx             ;  start of second partition
             call    _quickaux
-            add     rsp,16
+            add     rsp,24
 .qretrn:    popa
             leave
             ret
@@ -151,20 +153,18 @@ _quickaux:  enter
 
     ;;  the qsort procedure is just a wrapper around quickaux,
     ;;  for ease of integration into high level language.
-    ;;  void qsort(int *A, int start, int end)
+    ;;  void qsort(void *base, int num/*, int size, int (*compar)(void*, void*)*/)
 @qsort:     enter
-            pusha
-            mov     rbx,[rbp+16]    ;  start addr of array
-            mov     rax,[rbp+32]    ;  end index of partition
-            lea     rax,[8*rax+rbx] ;  multiply by 8: sizeof(int)==8
+            mov     rcx,[rbp+16]    ;  start addr of array
+            mov     rax,[rbp+24]    ;  end index of partition
+            dec     rax
+            lea     rax,[8*rax+rcx] ;  multiply by 8: sizeof(int)==8
                                     ;  rax holds end addr of partition
-            mov     rcx,[rbp+24]    ;  start index of partition
-            lea     rcx,[8*rcx+rbx] ;  start addr of partition
-            push    rax             ;  quickaux expects start and end 
+            push    qword 8         ;  quickaux expects size of cell,
+            push    rax             ;  as well as start and end
             push    rcx             ;  addresses of partition as arguments.
             call    _quickaux
-            add     rsp,16
-            popa
+            add     rsp,24
             leave
             ret
 

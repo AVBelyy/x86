@@ -36,11 +36,10 @@ out_array:  push    rax         ;  print message
 
 _start:     mov     rax,@before_msg
             call    out_array
-            push    qword size-1
-            push    qword 0
+            push    qword size
             push    @array
             call    qsort
-            add     rsp,24
+            add     rsp,16
             mov     rax,@after_msg
             call    out_array
             ret
