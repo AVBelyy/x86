@@ -16,8 +16,8 @@ gcd:        enter
 
 _start:     
     ;; Calculation part
-            mov     eax,12345678
-            mov     ebx,87654321
+            mov     rax,12345678
+            mov     rbx,87654321
             call    gcd
     ;; Output part
             push    qword 10

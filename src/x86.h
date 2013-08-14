@@ -81,7 +81,6 @@ typedef struct {
 extern uint16_t flags;
 extern int pid_counter;
 extern int reg_size[];
-extern int pusha_order[];
 extern handler inttable[INTTABLE_MAX];
 
 struct CODE

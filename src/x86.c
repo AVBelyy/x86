@@ -3,7 +3,6 @@
 uint16_t flags;
 int pid_counter;
 int reg_size[]    = {8,8,8,8,8,8,8,8,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1};
-int pusha_order[] = {0,2,3,1,7,6,4,5};
 handler inttable[INTTABLE_MAX];
 
 struct STACK *head = NULL;
@@ -140,6 +139,12 @@ void int32_handler(void *p)
         {
             /* rbx - int fd; */
             RAX = io_close(RBX);
+            break;
+        }
+        case 0x07: // size
+        {
+            /* rbx - int fd; */
+            RAX = io_size(RBX);
             break;
         }
         case 0x08: // creat
@@ -315,27 +320,17 @@ int code_exec(struct CODE *p)
             case 0x0B:  // PUSHA
             {
                 int i;
-                uint64_t saved = RSP;
-                for(i = 0; i < 8; i++)
-                    if(i == 4)
-                    {
-                        push(&saved, 8);
-                    } else {
-                        push(&regs[pusha_order[i]], 8);
-                    }
+                for(i = 0; i < 8; i++) {
+                    push(&regs[i], 8);
+                }
                 break;
             }
             case 0x0C:  // POPA
             {
                 int i;
-                uint64_t stub;
-                for(i = 7; i >=0; i--)
-                    if(i == 4)
-                    {
-                        pop(&stub, 8);
-                    } else {
-                        pop(&regs[pusha_order[i]], 8);
-                    }
+                for(i = 7; i >=0; i--) {
+                    pop(&regs[i], 8);
+                }
                 break;
             }
             case 0x0D:  // PUSH REG
@@ -1191,6 +1186,8 @@ void x86_exit(void *p)
 
 int main(int argc, char **argv)
 {
+    int i;
+
     // set X86_EXIT handler
     sig_attach(X86_EXIT, x86_exit, NULL);
 
@@ -1208,8 +1205,10 @@ int main(int argc, char **argv)
     {
         fprintf(stderr, "No application specified\n");
     } else {
-        struct CODE *test = code_load(argv[1]);
-        code_exec(test);
+        for(i = 1; i < argc; i++) {
+            struct CODE *test = code_load(argv[i]);
+            code_exec(test);
+        }
     }
 
     // raise X86_EXIT
